@@ -1,5 +1,8 @@
 Revision history for Perl extension CGI::Explorer.
 
+1.14  Sat Oct 26 14:29:00
+	- Minor documentation changes. No need to upgrade
+
 1.13  Sun May 12 13:12:11 2002
 	- Clean up licence and email stuff in all modules, scripts and other docs.
 		Upgrading is not necessary

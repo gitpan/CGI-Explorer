@@ -196,7 +196,7 @@ css([$new_css])
 
     Can be used to set the style-sheet, like set(css => $new_css).
 
-    See ce.pl for an example.
+    See ce.cgi for an example.
 
 current_id()
     Returns the id of the 'current' node.
@@ -232,7 +232,7 @@ from_dir($dir_name)
 
     You call as_HTML($q) later to retrieve a printable version of the data.
 
-    See ce.pl for an example.
+    See ce.cgi for an example.
 
 from_hash($hash_ref)
     Returns nothing.
@@ -274,7 +274,7 @@ from_hash($hash_ref)
         node's parent will still be 0, and your next-level nodes will all
         have a parent id of 1.
 
-    See ce.pl for an example.
+    See ce.cgi for an example.
 
 get($option)
     Returns the current value of the given option, or undef if the option is
@@ -287,7 +287,7 @@ image($icon_id, $new_image)
 
     Sets a new image file name for the given icon id.
 
-    See ce.pl for an example.
+    See ce.cgi for an example.
 
     The prefixes are:
 
@@ -372,7 +372,7 @@ state($q)
     state outside their own memory. I have chosen to use (hidden) form
     fields in "CGI::Explorer".
 
-    See ce.pl for an example.
+    See ce.cgi for an example.
 
     The form fields have these names:
 
@@ -392,7 +392,7 @@ state($q)
 
         Your CGI script must output this value.
 
-        See ce.pl for an example.
+        See ce.cgi for an example.
 
 Required Modules
     *   Tree::Nary. Not shipped with Perl. Get it from a CPAN near you
@@ -406,7 +406,7 @@ AUTHOR
     Home page: http://savage.net.au/index.html
 
 COPYRIGHT
-    Austrlian copyright (c) 2001, Ron Savage. All rights reserved.
+    Australian copyright (c) 2001, Ron Savage. All rights reserved.
 
             All Programs of mine are 'OSI Certified Open Source Software';
             you can redistribute them and/or modify them under the terms of
