@@ -14,7 +14,7 @@ package CGI::Explorer;
 #	P 114
 #
 # Note:
-#	tab = 4 spaces || die.
+#	o Tab = 4 spaces || die.
 #
 # Author:
 #	Ron Savage <ron@savage.net.au>
@@ -31,9 +31,7 @@ package CGI::Explorer;
 use strict;
 use warnings;
 
-use CGI;
-use File::Find;
-use Tree::Nary;
+use Carp;
 
 require 5.005_62;
 
@@ -57,113 +55,36 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw(
 
 );
-our $VERSION = '1.14';
+our $VERSION = '2.00';
+our $myself;
 
-# ---------------------------------------------------------------------------------
+# -----------------------------------------------
 
 # Preloaded methods go here.
 
-# An alias for $self, used in subs not called with a object ref as the 1st param.
-# Specifically, used in _found(), which is called by File::Find.
-
-use vars qw($myself);
-
-# ---------------------------------------------------------------------------------
+# -----------------------------------------------
 
 # Encapsulated class data.
 
 {
 	my(%_attr_data) =
 	(
-		_click_text		=> 1,
-		_css			=> <<EOS,
-<style type = 'text/css'>
-<!--
-input.explorer
-{
-background:_css_background;
-border-top-width:0px;
-border-bottom-width:0px;
-border-left-width:0px;
-border-right-width:0px;
-color:_css_color;
-font-family:tahoma;
-font-size:8pt;
-font-weight:bold;
-width:auto;
-}
--->
-</style>
-EOS
-		_css_background	=> 'white',
-		_css_color		=> 'navy',
-		_image_dir		=> '/images',
-		_show_current	=> 1,
-		_show_id		=> 1,
-		_show_name		=> 1,
-		_sort_by		=> 'name',
+		_behavior		=> 'classic',
+		_css			=> '/css/xtree.css',
+		_current_icon	=> '',
+		_current_id		=> '',
+		_current_key	=> '',
+		_form_name		=> 'explorer_form',
+		_hashref		=> {},
+		_header_type	=> 'text/html;charset=ISO-8859-1',
+		_js				=> '/js/xtree.js',
+		_jscript		=> '',
+		_left_style		=> 'position: absolute; width: 20em; top: 7em; left: 0.25em; padding: 0.25em; overflow: auto; border: 2px solid #e0e0e0;',
+		_node_id		=> 'rm00000',
+		_right_style	=> 'position: absolute; left: 20.25em; top: 7em; padding: 0.25em; border: 2px solid #e0e0e0;',
+		_tree			=> '',
+		_url			=> '',
 	);
-
-	my(%_icon_data) =
-	(
-		'root'	=>
-		{
-			clickable	=> 0,
-			image		=> 'explorer_root.gif',
-		},
-		'**'	=>
-		{
-			clickable	=> 1,
-			image		=> 'explorer_current_node.gif',
-		},
-		'-L'	=>
-		{
-			clickable	=> 1,
-			image		=> 'explorer_minus_elbow.gif',
-		},
-		'--'	=>
-		{
-			clickable	=> 1,
-			image		=> 'explorer_minus_tee.gif',
-		},
-		'+L'	=>
-		{
-			clickable	=> 1,
-			image		=> 'explorer_plus_elbow.gif',
-		},
-		'+-'	=>
-		{
-			clickable	=> 1,
-			image		=> 'explorer_plus_tee.gif',
-		},
-		' L'	=>
-		{
-			clickable	=> 0,
-			image		=> 'explorer_elbow.gif',
-		},
-		' -'	=>
-		{
-			clickable	=> 0,
-			image		=> 'explorer_tee.gif',
-		},
-		'  '	=>
-		{
-			clickable	=> 0,
-			image		=> 'explorer_transparent.gif',
-		},
-		'| '	=>
-		{
-			clickable	=> 0,
-			image		=> 'explorer_vertical.gif',
-		},
-	);
-
-	sub _clickable
-	{
-		my($self, $icon_id) = @_;
-
-		$_icon_data{$icon_id}{'clickable'};
-	}
 
 	sub _default_for
 	{
@@ -172,19 +93,81 @@ EOS
 		$_attr_data{$attr_name};
 	}
 
-	sub _image
+	sub _node_id
 	{
-		my($self, $icon_id, $new_image)	= @_;
-		my($old_image)					= '';
+		my($self) = @_;
 
-		if ($_icon_data{$icon_id})
-		{
-			$old_image						= $_icon_data{$icon_id}{'image'};
-			$_icon_data{$icon_id}{'image'}	= $new_image if ($new_image);
-		}
-
-		$old_image;
+		$$self{'_node_id'}++;
 	}
+
+	sub _scan_hash
+	{
+		my($self, $recursing, $hash, $parent, $previous_key) = @_;
+		my($script)	= '';
+
+		my($node_id, $new_key, $local_url, $shut_icon, $open_icon);
+
+		# Due to the defined && croak test in hash2tree, we know this loop
+		# will be executed only once by the original call from hash2tree.
+		# (Recursive calls can execute the loop any number of times.)
+		# This in turn means there will only be one $node_id generated
+		# by the loop when _scan_hash is called by hash2tree.
+		# We return this one $node_id to hash2tree for writing into the HTML.
+
+		for my $key (sort grep{! /^_/} keys %$hash)
+		{
+			$node_id						= ( (ref($$hash{$key}) eq 'HASH') && $$hash{$key}{'_node_id'}) ? $$hash{$key}{'_node_id'} : $self -> _node_id();
+			$local_url						= ( (ref($$hash{$key}) eq 'HASH') && $$hash{$key}{'_url'}) ? "$$hash{$key}{'_url'}/$node_id" : "$$self{'_url'}/$node_id";
+			$new_key						= $previous_key ? "$previous_key$;$key" : $key;
+			$$self{'_id2key'}{$node_id}		= $new_key;
+			$$self{'_key2id'}{$new_key}		= $node_id;
+			$$self{'_key2url'}{$new_key}	= $local_url;
+			$shut_icon						= ( (ref($$hash{$key}) eq 'HASH') && $$hash{$key}{'_shut_icon'}) ? $$hash{$key}{'_shut_icon'} : '';
+			$open_icon						= ( (ref($$hash{$key}) eq 'HASH') && $$hash{$key}{'_open_icon'}) ? $$hash{$key}{'_open_icon'} : '';
+			$shut_icon = $open_icon			= $$self{'_current_icon'} if ($$self{'_current_id'} && ($$self{'_current_id'} eq $node_id) && $$self{'_current_icon'});
+
+			if ($recursing)
+			{
+				$script .= <<EOS;
+var $node_id = new WebFXTreeItem("$key", "$local_url");
+EOS
+			$script .= <<EOS if ($shut_icon);
+$node_id.icon = "$shut_icon";
+EOS
+			$script .= <<EOS if ($open_icon);
+$node_id.openIcon = "$open_icon";
+EOS
+			$script .= <<EOS;
+$parent.add($node_id);
+EOS
+			}
+			else
+			{
+				$script = <<EOS;
+
+if (document.getElementById)
+{
+var $node_id = new WebFXTree("$key", "$local_url");
+$node_id.setBehavior('$$self{'_behavior'}');
+EOS
+	$script .= <<EOS if ($shut_icon);
+$node_id.icon = "$shut_icon";
+EOS
+	$script .= <<EOS if ($open_icon);
+$node_id.openIcon = "$open_icon";
+EOS
+			}
+
+			if (ref($$hash{$key}) eq 'HASH')
+			{
+				my($s, $rm)	= $self -> _scan_hash(1, $$hash{$key}, $node_id, $$self{'_id2key'}{$node_id});
+				$script		.= $s;
+			}
+	 	}
+
+		($script, $node_id);
+
+	}	# End of _scan_hash.
 
 	sub _standard_keys
 	{
@@ -192,332 +175,35 @@ EOS
 	}
 }
 
-# ---------------------------------------------------------------------------------
+# -----------------------------------------------
 
-sub as_HTML
+sub hash2tree
 {
-	my($self, $q) = @_;
+	my($self, %arg) = @_;
 
-	$self -> _build_result($$self{'_root'}, 1, '');
+	$self -> set(%arg);
 
-	my(@row);
+	my(@root) = grep{! /^_/} keys %{$$self{'_hashref'} };
 
-	my($count)	= 0;
-	my($image)	= $self -> _image('root');
+	# The highest subscript on the array 'keys %hash' must be 0 (ignoring special keys).
 
-	push(@row, $q -> img({src => "$$self{'_image_dir'}/$image", align => 'absmiddle'}) );
+	defined($root[1]) && croak('Error: Your tree has more than 1 root');
 
-	for my $line (@{$$self{'_result'} })
-	{
-		$count++;
-		my(@icon_id);
+	my($script)		= '';
+	my($rm)			= '';
+	($script, $rm)	= $self -> _scan_hash(0, $$self{'_hashref'}, '', '') if (ref($$self{'_hashref'}) eq 'HASH');
+	$script			.= <<EOS if ($script);
+document.write($rm);
+}
+EOS
 
-		my($icon_id, $id, $name)	= split(/$;/, $line);
-		@icon_id = $icon_id			=~ /../g;
-		my($explorer_id)			= "explorer_id_$id";
-		my($s)						= '';
+	$$self{'_tree'} = $script;
 
-		for $icon_id (@icon_id)
-		{
-			# We need width & height because the transparent gif is 1 x 1.
-			# Even worse, the root gif is 21 x 17.
+	$$self{'_jscript'} . $script;
 
-			my($image)	= $self -> _image($icon_id);
-			$image		= "$$self{'_image_dir'}/$image";
-			$image		= ($self -> _clickable($icon_id))
-							? $q -> image_button({name => $explorer_id, src => $image, align => 'absmiddle', width => 17, height => 17})
-							: $q -> img({src => $image, align => 'absmiddle', width => 17, height => 17});
-			$s			.= $image;
-		}
+}	# End of hash2tree.
 
-		my($text)	= ($$self{'_show_id'}) ? $id : '';
-		$text		= $$self{'_show_name'} ? ($text ? "$text: $name" : $name) : $text;
-		$text		=	$q -> submit
-				 		(
-							{class => 'explorer', name => $explorer_id, value => $text}
-						) if ($$self{'_click_text'});
-
-		push(@row,	($s .
-						$q -> font
-						(
-							{face => 'Helvetica', size => '-1'},
-							$text
-						)
-					) );
-	}
-
-	join('', map{$_ . $q -> br()} @row);
-
-}	# End of as_HTML.
-
-# ---------------------------------------------------------------------------------
-
-sub _build_result
-{
-	my($self, $root, $level, $prefix) = @_;
-
-	my(@node);
-
-	# Get the children of $root.
-
-	for (my $i = 0; $i < Tree::Nary -> n_children($root); $i++)
-	{
-		push(@node, Tree::Nary -> nth_child($root, $i) );
-		${$node[$#node]}{'data'}{'last'} = 0;
-	}
-
-	# Sort these children by 'name' or 'id'. If there are any, flag the last.
-
-	if ($$self{'_sort_by'} =~ /name/i)
-	{
-		@node = sort{$$a{'data'}{'name'} cmp $$b{'data'}{'name'} } @node;
-	}
-	else
-	{
-		@node = sort{$$a{'data'}{'id'} <=> $$b{'data'}{'id'} } @node;
-	}
-
-	${$node[$#node]}{'data'}{'last'} = 1 if ($#node >= 0);
-
-	# Process each child and its children.
-
-	for (my $i = 0; $i <= $#node; $i++)
-	{
-		# 1. Determine the prefix for the current node.
-
-		my($node)			= $node[$i];
-		my($id)				= $$node{'data'}{'id'};
-		my($new_icon_id)	= '';
-
-		# If this node has children...
-
-		if (Tree::Nary -> n_children($node) > 0)
-		{
-			if ($$self{'_state'}{$id}{'open'})
-			{
-				$new_icon_id = ($$node{'data'}{'last'} ? '-L' : '--');
-			}
-			else
-			{
-				$new_icon_id = ($$node{'data'}{'last'} ? '+L' : '+-');
-			}
-		}
-		else
-		{
-			$new_icon_id = ($$node{'data'}{'last'} ? ' L' : ' -');
-		}
-
-		# This node is the 'current' node.
-
-		$new_icon_id = '**' if ($$self{'_show_current'} && $id == $$self{'_current_id'});
-
-		# Warning: The text pushed here is split elsewhere, to recover prefix, id & name.
-
-		push(@{$$self{'_result'} }, "$prefix$new_icon_id$;$id$;$$node{'data'}{'name'}");
-
-		# 2. Determine the prefix for the node's children.
-
-		$new_icon_id = $prefix . ($$node{'data'}{'last'} ? '  ' : '| ');
-
-		# Recurse to process this node's children.
-
-		$self -> _build_result($node, ($level + 1), $new_icon_id) if ($$self{'_state'}{$id}{'open'});
-	}
-
-}	# End of _build_result.
-
-# ---------------------------------------------------------------------------------
-
-sub css
-{
-	my($self, $new_css)	= @_;
-	$$self{'_css'}		= $new_css if ($new_css);
-	$$self{'_css'}		=~ s/_css_background/$$self{'_css_background'}/;
-	$$self{'_css'}		=~ s/_css_color/$$self{'_css_color'}/;
-
-	$$self{'_css'};
-
-}	# End of css.
-
-# ---------------------------------------------------------------------------------
-
-sub current_id
-{
-	my($self) = @_;
-
-	$$self{'_current_id'};
-
-}	# End of current_id.
-
-# ---------------------------------------------------------------------------------
-
-sub depth
-{
-	my($self, $id)		= @_;
-	$$self{'_depth'}	= 0;
-
-	Tree::Nary -> traverse($$self{'_root'}, $Tree::Nary::IN_ORDER, $Tree::Nary::TRAVERSE_ALL, -1, \&_depth, $id);
-
-	$$self{'_depth'};
-
-}	# End of depth.
-
-# ---------------------------------------------------------------------------------
-
-sub _depth
-{
-	my($node, $data) = @_;
-
-	if ($$node{'data'}{'id'} == $data)
-	{
-		# Subtract 1 because of our fake root node.
-
-		$$myself{'_depth'} = Tree::Nary -> depth($node) - 1;
-		return $Tree::Nary::TRUE;
-	}
-	else
-	{
-		return $Tree::Nary::FALSE;
-	}
-
-}	# End of _depth.
-
-# ---------------------------------------------------------------------------------
-
-sub _found
-{
-	my(@bit)	= split(/\//, $File::Find::dir);
-	my($prefix)	= '';
-
-	if (! $$myself{'_dir_name'})
-	{
-		$$myself{'_dir_name'}	= $File::Find::dir;
-		$$myself{'_dir_bit'}	= $#bit;
-	}
-
-	splice(@bit, 0, $$myself{'_dir_bit'});
-
-	my($parent);
-
-	for my $bit (@bit)
-	{
-		$parent	= $prefix;
-		$prefix	.= "/$bit";
-
-		next if (${$$myself{'_seen'} }{$prefix});
-
-		$$myself{'_id'}++;
-
-		${$$myself{'_seen'} }{$prefix}					= $$myself{'_id'};
-		${$$myself{'_tree'} }{$$myself{'_id'} }			= {};
-		${$$myself{'_tree'} }{$$myself{'_id'} }{'id'}	= $$myself{'_id'};
-		${$$myself{'_tree'} }{$$myself{'_id'} }{'name'}	= $prefix;
-		my($parent_id)									= 0;
-
-		for my $key (keys %{$$myself{'_tree'} })
-		{
-			$parent_id = ${$$myself{'_tree'} }{$key}{'id'} if ($parent eq ${$$myself{'_tree'} }{$key}{'name'});
-		}
-
-		${$$myself{'_tree'} }{$$myself{'_id'} }{'parent_id'} = $parent_id;
-	}
-
-}	# End of _found.
-
-# ---------------------------------------------------------------------------------
-
-sub from_dir
-{
-	my($self, $dir_name)	= @_;
-	$$self{'_id'}			= 0;
-	$$self{'_seen'}			= {};
-	$$self{'_tree'}			= {};
-
-	File::Find::find(\&_found, $dir_name);
-
-	$self -> from_hash($$self{'_tree'});
-
-	$$self{'_id'}  	= 0;
-	$$self{'_seen'}	= {};
-	$$self{'_tree'}	= {};
-
-}	# End of from_dir.
-
-# ---------------------------------------------------------------------------------
-
-sub from_hash
-{
-	my($self, $hash_ref) = @_;
-
-	# We must loop repeatedly to ensure we have processed all nodes.
-	# On any loop we skip a hash_ref if it's parent has not been done,
-	# but we get it on the loop after processing its parent.
-	# Start by building a hash of all keys, and delete them as they are processed.
-
-	my(%seen)		= ();
-	my(@keys)		= keys %$hash_ref;
-	@seen{@keys}	= (1) x (1 + $#keys);
-	my($count)		= 1;
-
-	# Insert the base nodes.
-
-	my($id, %inserted);
-
-	for my $key (keys %$hash_ref)
-	{
-		next if ($$hash_ref{$key}{'parent_id'} != 0);
-
-		$id								= $$hash_ref{$key}{'id'};
-		$seen{$key}						= 0;
-		my($node)						= Tree::Nary -> new($$hash_ref{$key});
-		$inserted{$id}					= $node;
-		$$self{'_state'}{$id}{'open'}	= 0;
-		$$self{'_name'}{$id}			= $$node{'data'}{'name'};
-		Tree::Nary -> append($$self{'_root'}, $node);
-	}
-
-	# Insert all other nodes.
-
-	while ($count > 0)
-	{
-		# Have we finished?
-
-		$count = 0;
-
-		for my $seen (keys %seen)
-		{
-			$count++ if ($seen{$seen});
-		}
-
-		# Yes.
-
-		next if ($count == 0);
-
-		# No.
-
-		for my $key (keys %$hash_ref)
-		{
-			$id = $$hash_ref{$key}{'id'};
-
-			next if ($inserted{$id});
-			next if (! $inserted{$$hash_ref{$key}{'parent_id'} });
-
-			# This hash_ref is absent, but its parent is present. Add it to its parent.
-
-			$seen{$key}						= 0;
-			my($node)						= Tree::Nary -> new($$hash_ref{$key});
-			$inserted{$id}					= $node;
-			$$self{'_state'}{$id}{'open'}	= 0;
-			$$self{'_name'}{$id}			= $$node{'data'}{'name'};
-			Tree::Nary -> append($inserted{$$hash_ref{$key}{'parent_id'} }, $node);
-		}
-	}
-
-	$$self{'_current_id'} = (sort @keys)[0];
-
-}	# End of from_hash.
-
-# ---------------------------------------------------------------------------------
+# -----------------------------------------------
 
 sub get
 {
@@ -539,27 +225,64 @@ sub get
 
 }	# End of get.
 
-# ---------------------------------------------------------------------------------
+# -----------------------------------------------
 
-sub image
+sub get_node
 {
-	my($self, $icon_id, $new_image) = @_;
+	my($self, %arg) = @_;
 
-	$self -> _image($icon_id, $new_image);
+	$self -> set(%arg);
 
-}	# End of name.
+	$$self{'_current_key'}	= $self -> id2key();
+	my(@current_key)		= split(/$;/, $$self{'_current_key'});
+	my($node)				= $$self{'_hashref'};
 
-# ---------------------------------------------------------------------------------
+	for my $current_key (@current_key)
+	{
+		$node = $$node{$current_key} if (ref($node) eq 'HASH');
+	}
 
-sub name
+	$node;
+
+}	# End of get_node.
+
+# -----------------------------------------------
+
+sub id2key
 {
-	my($self) = @_;
+	my($self, %arg) = @_;
 
-	$$self{'_current_id'} ? $$self{'_name'}{$$self{'_current_id'} } : '';
+	$self -> set(%arg);
 
-}	# End of name.
+	$$self{'_current_key'} = $$self{'_id2key'}{$$self{'_current_id'} } ? $$self{'_id2key'}{$$self{'_current_id'} } : '';
 
-# ---------------------------------------------------------------------------------
+}	# End of id2key.
+
+# -----------------------------------------------
+
+sub key2id
+{
+	my($self, %arg) = @_;
+
+	$self -> set(%arg);
+
+	$$self{'_key2id'}{$$self{'_current_key'} } ? $$self{'_key2id'}{$$self{'_current_key'} } : '';
+
+}	# End of key2id.
+
+# -----------------------------------------------
+
+sub key2url
+{
+	my($self, %arg) = @_;
+
+	$self -> set(%arg);
+
+	$$self{'_key2url'}{$$self{'_current_key'} } ? $$self{'_key2url'}{$$self{'_current_key'} } : '';
+
+}	# End of key2url.
+
+# -----------------------------------------------
 
 sub new
 {
@@ -567,14 +290,6 @@ sub new
 	my($caller_is_obj)		= ref($caller);
 	my($class)				= $caller_is_obj || $caller;
 	my($self)				= bless({}, $class);
-	$myself					= $self; # Since $self is not available inside _found().
-	$$self{'_current_id'}	= 0;
-	$$self{'_dir_name'}		= '';
-	$$self{'_dir_bit'}		= 0;
-	$$self{'_name'}			= {};
-	$$self{'_result'}		= [];
-	$$self{'_root'}			= Tree::Nary -> new({id => 0, name => 'Root node'});
-	$$self{'_state'}		= {};
 
 	for my $attr_name ($self -> _standard_keys() )
 	{
@@ -594,21 +309,17 @@ sub new
 		}
 	}
 
+	$$self{'_hash'}		= '';
+	$$self{'_id2key'}	= {};
+	$$self{'_key2id'}	= {};
+	$$self{'_key2url'}	= {};
+	$myself				= $self;
+
 	return $self;
 
 }	# End of new.
 
-# ---------------------------------------------------------------------------------
-
-sub parent_id
-{
-	my($self) = @_;
-
-	$$self{'_current_id'} ? ${$$self{'_tree'} }{$$self{'_current_id'} }{'parent_id'} : 0;
-
-}	# End of parent_id.
-
-# ---------------------------------------------------------------------------------
+# -----------------------------------------------
 
 sub set
 {
@@ -626,38 +337,7 @@ sub set
 
 }	# End of set.
 
-# ---------------------------------------------------------------------------------
-
-sub state
-{
-	my($self, $q)		= @_;
-	my($icon_clicked)	= '';
-
-	for ($q -> param() )
-	{
-		($$self{'_current_id'}, $icon_clicked) = ($1, $2) if (/^explorer_id_(\d+)(.*)/);
-	}
-
-	if ($q -> param('explorer_state') )
-	{
-		for my $id_open (split(/;/, $q -> param('explorer_state') ) )
-		{
-			my($id, $open)					= split(/=/, $id_open);
-			$$self{'_state'}{$id}			= {};
-			$$self{'_state'}{$id}{'open'}	= $open;
-		}
-	}
-
-	# Toggle the 'open' status of the current id.
-
-	$$self{'_state'}{$$self{'_current_id'} }{'open'} = 1 - $$self{'_state'}{$$self{'_current_id'} }{'open'}
-		if ($$self{'_current_id'} && $icon_clicked);
-
-	join(';', map{"$_=$$self{'_state'}{$_}{'open'}"} sort{$a <=> $b} keys %{$$self{'_state'} });
-
-}	# End of state.
-
-# ---------------------------------------------------------------------------------
+# -----------------------------------------------
 
 1;
 
@@ -665,97 +345,64 @@ __END__
 
 =head1 NAME
 
-C<CGI::Explorer> - A class to manage a tree of data, for use in CGI scripts
+C<CGI::Explorer> - A class to manage displaying a hash tree of data, for use in CGI scripts
 
-=head1 VERSION
+The format of the hash is discussed in the FAQ section.
 
-This document refers to version 1.12 of C<CGI::Explorer>, released 23-Mar-2001.
+=head1 Synopsis
 
-=head1 SYNOPSIS
+Install /css/xtree.css, /js/xtree.js, and /images/*, as per the installation
+instructions, below.
 
-This is tested code, altho the she-bang (#!) line must start in column 1:
+Then run the demos example/bootstrap-hobbit.pl, which creates a database table using C<DBIx::Hash2Table>, and then
+example/hobbit.cgi, which reads a database table using C<DBIx::Table2Hash>.
 
-	#!/usr/Bin/Perl
+Or, run example/hobbit-hash.cgi which has the same hash directly in the source code.
 
-	use strict;
-	use warnings;
+=head1 Description
 
-	use CGI;
-	use CGI::Explorer;
+C<CGI::Explorer> is a pure Perl module.
 
-	my($q)		= CGI -> new();
-	my($tree)	= CGI::Explorer -> new();
-	my($dir)	= 'D:/My Documents/HomePage';
-
-	$tree -> from_dir($dir);
-
-	my($state)	= $tree -> state($q); # Must follow from_dir() or from_hash().
-	my($tree_set)	= $tree -> as_HTML($q);
-	my($result_set)	= 'Id: ' . $tree -> current_id() . '. Name: ' . $tree -> name();
-
-	print	$q -> header(),
-			$q -> start_html(),
-			$tree -> css(),
-			$q -> start_form({action => $q -> url()}),
-			$q -> hidden({name => 'explorer_state', value => $state, force => 1}),
-			$q -> table
-			(
-				{border => 1},
-				$q -> Tr
-				([
-					$q -> td($tree_set) .
-					$q -> td($result_set),
-				])
-			),
-			$q -> end_form(),
-			$q -> end_html();
-
-You need only change 2 lines at most, after cutting and pasting it:
-
-=over 4
-
-=item *
-
-#!/usr/Bin/Perl
-
-=item *
-
-my($dir) = 'D:/My Documents/HomePage';
-
-=back
-
-=head1 DESCRIPTION
-
-C<CGI::Explorer> is a support module for CGI scripts. It manages a tree of data, so
-that the script can display the tree, and the user can click on B<the icon> of a node
-in the tree to open or close that node.
+It is a support module for CGI scripts. It manages a hash, a tree of data, so that the script
+can display the tree, and the user can single-click on the B<[+]> or B<[-]> of a node,
+or double-click on the B<icon> of a node, to open or close that node's sub-tree.
 
 Opening a node reveals all children of that node, and restores their open/closed state.
 
 Closing a node hides all children of that node.
 
-Even when using the B<new>(click_text => 1), clicking on B<the text> of a node does
-not toggle the open/closed status of a node.
+When you click on the text of a node, the node's id is submitted to the CGI script via
+the path info of the URL attached to that node. This path info mechanism can be
+overridden.
 
-=head1 Overview
+The id is assigned to the node when you call the method C<hash2tree()>, which is where the
+module converts your hash into JavaScript.
 
-C<CGI::Explorer> reconstructs its internal representation of the tree each time the script
-is invoked.
+Neither the module CGI.pm, nor any of that kidney, are used by this module.
 
-Some of data comes from the script calling B<from_dir()> or
-B<from_hash()>, and some of the data comes from CGI form fields returned
-from the previous invocation of the script.
+=head1 Installation
 
-Specifically, the open/closed state of each node is sent on a round trip from one
-invocation of the script out to the browser, and, via a 'form submit', back to the
-next invocation of the script.
+The makefile will install /perl/site/lib/CGI/Explorer.pm.
 
-Also, clicking on a node on a form submits the form, and passed the id of the node
-so clicked back to the second invocation of the script. When using the B<new()> option
-click_text => 1, clicking on the text of the node also submits the form.
+You must manually install <Document Root>/css/xtree.css, <Document Root>/js/xtree.js, and
+<Document Root>/images/*.
 
-State maintenance - a complex issue - is discussed further below. See the 'state'
-method.
+If you choose to put the CSS elsewhere, you'll need to call new(css => '/new/path/xtree.css').
+
+If you choose to put the JavaScript elsewhere, you'll need to call new(js => '/new/path/xtree.js').
+
+These last 2 options can be used together, and can be passed into C<hash2tree()> or C<set()> rather than
+C<new()>.
+
+If you choose to put the images elsewhere, you'll need to edit lines 62 .. 74 of xtree.js V 1.15.
+
+=head1 Warning: V 1 'v' V 2
+
+The API for C<CGI::Explorer> version 2 is not compatible with the API for version 1.
+
+This is because version 2 includes CSS and JavaScript to handle expanding and
+contracting sub-trees purely within the client. No longer do client mouse clicks cause
+a round trip to the server/CGI script and back.
 
 =head1 Constructor and initialization
 
@@ -763,10 +410,9 @@ new(...) returns a C<CGI::Explorer> object.
 
 This is the class's contructor.
 
-A call to B<new()> is equivalent to:
+Almost every option is demonstrated by the program example/hobbit.cgi.
 
-new(click_text => 0, css => '...', image_dir => '/images', show_current => 1,
-show_id => 1, show_name => 1, sort_by => 'name')
+Note: All methods (except C<get()>) use named parameters.
 
 Options:
 
@@ -774,380 +420,666 @@ Options:
 
 =item *
 
-click_text - Default is 1
+behavior
 
-Make the displayed text (id and/or name) of the node a submit button.
+Usage: CGI::Explorer -> new(behavior => 'classic').
 
-=item *
+This option takes one of two values:
 
-css - Default is <a very long string>. See source code for gory details
-
-Provide a style-sheet for submit buttons, for use when click_text == 1.
-
-A default style-sheet is provided. Yes, I know the submit button text,
-using the style-sheet, is really too wide, but as you'll see from the source,
-I cannot find a style-sheet command to make it narrower.
+=over 4
 
 =item *
 
-css_background - Default is 'white'
+classic
 
-The background color for submit buttons.
+This is the default.
 
-=item *
-
-css_color - Default is 'navy'
-
-The foreground color for submit buttons.
+classic means the leaf nodes on the tree have a document icon.
 
 =item *
 
-image_dir - Default is '/images'
+explorer
 
-Specify the web server's directory in which the node icons are to be found.
-
-Note: This is B<not> the operating system path of the directory, it is the path
-relative to the web server's document root.
-
-=item *
-
-show_current - Default is 1
-
-Show a special icon for the 'current' node.
-
-=item *
-
-show_id - Default is 1
-
-Show the id of the node, to the right of the node's icon.
-
-=item *
-
-show_name - Default is 1
-
-Show the name of the node, to the right of the node's icon, and to the right of the
-node's id (if show_id == 1).
-
-If show_id == 0 && show_name == 0, nothing is displayed.
-
-=item *
-
-sort_by - Default is 'name'
-
-When set to 'name' (any case), sort the nodes by their names. When set to 'id', sort
-them by their ids. Sorting applies to all nodes at the same depth.
+explorer means the leaf nodes have a folder icon, ie they look like those in MS
+Windows Explorer, even though they can't be opened.
 
 =back
 
-=head1 Icons for Nodes
+Note: I have adopted the non-Australian spelling of behavior, as used by Emil A Eklund in the
+JavaScript shipped with C<CGI::Explorer>.
 
-C<CGI::Explorer> ships with a set of icons, with a PNG and a GIF for each icon.
+=item *
 
-The default is GIF, because more browsers support GIF transparency than support
-PNG transparency.
+css
 
-You don't have to pay UniSys a licence for usage of the GIF compression algorithm,
-because the GIFs are uncompressed :-).
+Usage: CGI::Explorer -> new(css => '/css/xtree.css').
 
-The make file does not install these files automatically. You must install them
-manually under the web server's document root, and then use the image_dir option
-to point to the directory containing these files.
+This points to a file of CSS used to display the tree.
 
-Many GIFs are from a package called MySQLTool. Unfortunately the authors of this
-program have forgotten to put a download URI in their package. You may get some joy
-here: http://lists.dajoba.com/m/listinfo/mysqltool.
+The default is '/css/xtree.css'.
 
-I've renamed their files from the names used by MySQLTool.
+Emil A Eklund is the author of xtree.css.
 
-The icons for the root node, and for the current node, are not quite satisfactory.
-Let me know if you have better ones available.
+The make file does not install this CSS file automatically. You must install it
+manually under the web server's document root.
 
-If the transparent PNG does not display properly on your browser, which is likely,
-update the browser, or try using the GIFs.
+=item *
 
-Almost all icons are constrained to a size of 17 x 17. The exception is the icon
-for the root, which is unconstrained, so that you may use any image you wish.
+current_icon
 
-Use the method B<image($icon_id, $image_name)> to change the image file name of an icon.
+Usage: CGI::Explorer -> new(current_icon => '/path/to/image for current icon').
 
-=head1 as_HTML($q)
+This option takes one of two values:
+
+=over 4
+
+=item *
+
+'' (the empty string)
+
+This is the default.
+
+This stops the currently selected node from being given a special icon.
+
+=item *
+
+'/path/to/image for current icon'
+
+Eg: the file '/images/current.png' is shipped with this module.
+
+This gives the currently selected node the icon defined by the value of the string.
+
+=back
+
+=item *
+
+current_id
+
+Usage: CGI::Explorer -> hash2tree(current_id => $id, ...).
+
+This is the value retrieved by you from the URL's path info, and passed into one of the methods.
+
+The default value is ''.
+
+=item *
+
+current_key
+
+Usage: $key = $explorer -> id2key() or $key = $explorer -> get('current_key').
+
+This is the value of the string of keys, joined by $;, which lead from the root of the tree to the node whose id
+is the value of current_id.
+
+The default value is ''.
+
+=item *
+
+form_name
+
+Usage: CGI::Explorer -> new(form_name => 'explorer_form').
+
+This is simply a convenient place to store a default form name. Ignore this parameter if you wish.
+
+The default is 'explorer_form'.
+
+Warning: Under MS Internet Explorer, some words are reserved, and can not be used as form names. I think
+you'll find 'explorer', and perhaps 'form', are reserved in such circumstances.
+
+=item *
+
+hashref
+
+Usage: CGI::Explorer -> new(hashref => {...}).
+
+This is a reference to a tree-structured hash which contains the data to be displayed.
+
+From example/hobbit.cgi it will be clear that some CPAN modules' methods, eg my DBIx::Table2Hash -> select_tree(),
+can return a hash suitable for passing directly into C<new()> or C<hash2tree()>.
+
+The default is {}.
+
+=item *
+
+header_type
+
+Usage: CGI::Explorer -> new(header_type => 'text/html;charset=ISO-8859-1').
+
+This is simply a convenient place to store a default HTTP header type. Ignore this parameter if you wish.
+
+The default is 'text/html;charset=ISO-8859-1'.
+
+=item *
+
+js
+
+Usage: CGI::Explorer -> new(js => '/js/xtree.js').
+
+This points to a file of JavaScript used to manipulate the tree.
+
+The default is '/js/xtree.js'.
+
+Emil A Eklund is the author of xtree.js.
+
+The make file does not install this JavaScript file automatically. You must install it
+manually under the web server's document root.
+
+Note: I've made one systematic change to xtree.js V 1.15. I've changed lines 62 .. 74
+to add a '/' prefix to the paths of the images. This means you should install the images/
+directory under your web server's document root.
+
+=item *
+
+jscript
+
+Usage: CGI::Explorer -> new(jscript => '...').
+
+This is any JavaScript you wish, and which becomes the prefix of the JavaScript generated
+to populate the tree from the given hash.
+
+The default is ''.
+
+Warning: Be clear about the differences between the 2 parameters 'js' and 'jscript'.
+
+=item *
+
+left_style
+
+Usage: CGI::Explorer -> new(left_style => '<Some CSS>').
+
+This is a string of CSS used to format the HTML div of the left-hand pane, ie the one
+in which the tree is displayed.
+
+The default is 'position: absolute; width: 20em; top: 7em; left: 0.25em; padding: 0.25em; overflow: auto; border: 2px solid #e0e0e0;'.
+
+=item *
+
+node_id
+
+Usage: CGI::Explorer -> new(node_id => 'js_rm_00').
+
+The default is 'rm00000', where rm stands for run mode.
+
+See the FAQ for a discussion of the role of this parameter.
+
+Note especially the warnings mentioned in the FAQ regarding the syntax of values for this option.
+
+=item *
+
+right_style
+
+Usage: CGI::Explorer -> new(right_style => '<Some CSS>').
+
+This is a string of CSS used to format the HTML div of the right-hand pane, ie the one
+in which the CGI script's output is displayed.
+
+The default is 'position: absolute; left: 20.25em; top: 7em; padding: 0.25em; border: 2px solid #e0e0e0;'.
+
+=item *
+
+tree
+
+Usage: $tree = $explorer -> get('tree').
+
+This is the tree of JavaScript returned by C<hash2tree()>.
+
+=item *
+
+url
+
+Usage: CGI::Explorer -> new(url => $q -> url() ).
+
+This is a string for the URL to be submitted when the node's text is clicked.
+
+The default is ''.
+
+If you use C<CGI.pm>'s C<url()> method to obtain the default URL, you get something like
+'http://127.0.0.1/perl/hobbit.cgi'. You're advised to shorten this to '/perl/hobbit.cgi'
+before passing it into C<new()> or C<hash2tree()>, since a copy of this string is attached to each
+node, and the shorter version saves you around 20 bytes per node.
+
+Each node will, by default, be given the same URL, with only the path info varying
+from node to node. The URL has the node's id appended as path info, when the node is copied from your hash and
+inserted into the tree. Hence the node's URL will then be of the form "$url/$id".
+
+See the FAQ for a discussion of how ids are generated.
+
+It is this final URL, "$url/$id", which is passed back to your CGI script when a node's text is clicked.
+
+It is up to you, as author of the CGI script, to know what to do, ie what code to execute, for a given id.
+
+You can think of your CGI script as a callback, being triggered by events in the client. Then, this id is
+what your callback uses to determine what action to take for each client request.
+
+If you wish to override this system, use the reserved hash key '_url', as described in the FAQ.
+
+=back
+
+=head1 FAQ
+
+Q: What is the format of this thing you call a 'hash tree'?
+
+A: It is simply a hash, with these characteristics:
+
+=over 4
+
+=item *
+
+It has a single root.
+
+So, if your hash looks like this:
+
+	my($h) = {Key => {...} };
+
+then you can pass $h into method C<hash2tree()>.
+
+But, if you hash has multiple roots like this:
+
+	my($h) = {Key_1 => {...}, Key_2 => {...} };
+
+you must call C<hash2tree()> like this:
+
+	$explorer -> hash2tree(hashref => {Mother_Of_All_Roots => $h});
+
+so as to ensure hashref points to a hash with a single root.
+
+=item *
+
+Hash keys are displayed in sorted order
+
+This uses Perl's default sorting mechanism.
+
+=item *
+
+Keys and sub-keys
+
+Keys either point to a string, eg undef, '' or 'Data', or keys point to hashrefs, which is what makes the hash a
+tree. Eg:
+
+	my($h)={Root=>{Key_1=>undef,Key_2=>{Key_3=>{...},Data=>''},Key_4=>{}};
+
+Note: See how Key_4 can point to an empty hash.
+
+See example/hobbit-hash.cgi for a CGI script with a hash embedded in the source.
+
+See example/bootstrap-hobbit.pl for a command line script with the same hash embedded in the source, and which writes
+the hash to a database table. See example/hobbit.cgi for a CGI script which reads and displays that database table.
+
+Note: Some of the URLs in the demo hash point to non-existant CGI scripts. It's a demo, after all.
+
+=item *
+
+All hash keys matching /^_/ are treated specially
+
+That is, they are ignored when building the visible part of the tree.
+
+This is slightly unusual, so read slowly :-).
+
+=over 4
+
+=item *
+
+Hash keys matching /^_node_id$/ are used to override the default id appended to a node's URL
+
+See the discussion of _url 2 items down for details.
+
+=item *
+
+Hash keys matching /^_image$/ may one day be used to override the default icon of a node
+
+But this is not implemented, so you can't do this just yet.
+
+Anyway, we'd need up to 3 columns - for the open icon, the shut icon, and (perhaps) the current icon. And it's all
+getting just a bit too complicated.
+
+=item *
+
+Hash keys matching /^_url$/ are used to override the default URL of a node
+
+Given a hash key like:
+
+Mega_key => {Nested_key_if_any => {} }
+
+then the default URL attached to the node labelled Mega_key is overridden thus:
+
+Mega_key => {_url => 'Special URL', Nested_key_if_any => {} }
+
+See how _url is a sub-key (child) of the key who actually owns this URL.
+
+Clearly, this overriding mechanism operates on a node-by-node basis, so any node can
+be given any node id and/or URL.
+
+Even when this option is used, the node's id is still appended to this special URL as path info.
+
+=back
+
+=item *
+
+The tree must be constant
+
+The hash used to build the tree must be constant from one execute of the CGI script
+to the next, or the id generated for a node on the first execute and hence returned by the
+client may not match the id generated for the same node on the second execute.
+
+=item *
+
+Bugs in Apache/mod_perl/Perl/CGI.pm
+
+In this environment: Win2K, Apache 1.3.26, mod_perl 1.27_01-dev, Perl 5.6.1, CGI.pm 2.89,
+the CGI method path_info(), when given a URL without any path info, returns the path info
+from the previous submit, but only if the CGI script is running as an Apache::Registry script.
+When the CGI script is run as a simple cgi-bin script, this bug is not manifest.
+
+This is very like the behavior of my()-scoped variables in nested subroutines, documented
+here:
+
+http://perl.apache.org/docs/general/perl_reference/perl_reference.html
+
+Click on: 'my() Scoped Variable in Nested Subroutines' for details.
+
+You have been warned.
+
+=back
+
+Q: Why use em rather than px in left_style and right_style?
+
+A: The designers of CSS2, Hakon Lie and Bert Bos, recommend using relative sizes, and specifically em.
+
+Q: Why does my tree display 'funny'?
+
+A: Because browsers vary in how well they render CSS.
+
+Under Win2K, IE 6.00.2600, the style 'overflow: auto' in left_style renders as it
+should.
+
+Under Win2K, IE 5.00.3502, 'overflow: auto' renders as though you had specified
+'overflow: visible'.
+
+Q: How do I configure Apache V 2 to use /perl/ the way you recommend in the next Q?
+
+A: Add these options to httpd.conf and restart the server:
+
+	Alias /perl/ "/apache2/perl/"
+	<Location /perl>
+		SetHandler perl-script
+		PerlResponseHandler ModPerl::Registry
+		Options +ExecCGI
+		PerlOptions +ParseHeaders
+		Order deny,allow
+		Deny from all
+		Allow from 127.0.0.1
+	</Location>
+
+Q: How do I run the demo?
+
+A: Install example/hobbit.cgi as /apache2/perl/hobbit.cgi and run it via your browser, by typing
+
+	http://127.0.0.1/perl/hobbit.cgi
+
+into your browser. Study the screen.
+
+Now, click on the [+] signs to open the tree until you can see 'Evil Grey Gnome', noting the spelling of Grey.
+
+Now click on the text 'Evil Grey Gnome'.
+
+Lastly, click on 'Prettiest grand gnome' in the breadcrumb trail. Neat, huh?
+
+Note: The update button in example/hobbit.cgi does not actually do anything.
+
+Q: How are node ids generated?
+
+A: Well, by rolling your mouse over the nodes' texts, you can see in the browser's status line URLs like:
+
+	http://127.0.0.1/perl/hobbit.cgi/rm00006
+
+(for Evil Grey Gnome)
+
+These ids are generated sequentially, starting with 'rm00000'. So, the second id will be 'rm00001', and so on.
+
+The initial value is the default value for the node_id parameter to C<new()> or C<hash2tree()>.
+
+Hence you can control the values of the ids by initializing the node_id parameter, subject to the warnings
+which follow.
+
+Values for node_id are generated for all nodes in the hash tree for which you have not supplied a node-specific
+value for node_id.
+
+Warning:
+
+=over 4
+
+=item *
+
+The node_id string has a trailing integer
+
+The code C<$$self{'_node_id'}++;> is used to increment ids. This means that if you wish to override the default
+value for node_id, you absolutely must supply an initial value for node_id which has a nice set of trailing zeros
+(just like the cheque you're thinking of sending me for releasing such a great module :-).
+
+Hence the default value 'rm00000'.
+
+Warning: You can't use a value like '_00' because Perl discards the '_' when incrementing such a string.
+
+=item *
+
+All values of the node_id string are the names of JavaScript variables
+
+This means that if you wish to override the default value for node_id, you absolutely must supply a value
+for node_id which is a valid JavaScript variable name.
+
+Hence the default value 'rm00000'.
+
+Hence, also, the values in the _node_id column of the hobbit table generated by the program
+example/bootstrap-hobbit.cgi.
+
+=back
+
+Q: How is the breadcrumb trail in example/hobbit.cgi generated?
+
+A: See the source.
+
+Q: How do I know when to pass a given parameter in to a method? Eg: Do I call C<new()> or C<hash2tree()> to
+set a value for node_id or current_icon?
+
+A: You can pass in any parameter to any method (except C<get()>) at any time before that parameter is actually needed.
+
+All methods (except C<get()>) take a list of named parameters, and store the values of the parameters internally
+within the object.
+
+So, when you see this code in example/hobbit.cgi:
+
+	my($tree)       =$explorer->hash2tree(current_id=>$current_id,hashref=>$hash);
+	my($current_key)=$explorer->id2key();
+
+you know the call to C<id2key()> must be using the value of current_id passed in in the call to C<hash2tree()>.
+
+You could have used this code:
+
+	my($tree)       =$explorer->hash2tree(hashref=>$hash);
+	my($current_key)=$explorer->id2key(current_id=>$current_id);
+
+but that would mean the value of current_id was not available during the call to C<hash2tree()>, so the
+current node in the tree could not have had the special icon designated by the value of the parameter
+current_icon (if you passed in a value for current_icon in the call to C<new()> or C<hash2tree()> of course.),
+because at the time of calling C<hash2tree()>, the code in that module would not know the value of current_id.
+
+Even worse, if current_id somehow had a value from a previous call to a method, the wrong node would be flagged as
+the current node.
+
+Q: I'm running on a Pentium II at 266MHz. I'm finding that as I get up to many hundreds of nodes, it takes a
+long time to update the screen.
+
+A: Yes.
+
+Emil has kindly offered to work on speeding things up. I have one idea, but have not tried implementing it yet.
+
+=head1 Method: hash2tree(current_id => $current_id, hashref => $hash)
+
+Returns the JavaScript which populates the tree.
+
+You can also retrieve this JavaScript by calling:
+
+	$explorer -> hash2tree(hashref => $hashref);
+	my($tree) = $explorer -> get('jscript') . $explorer -> get('tree');
+
+Note: $explorer -> get('js') returns the name of the file of JavaScript written by Emil, ie
+'/js/xtree.js', by default. Try not to get the 2 options 'js' and 'jscript' confused. It'll make you look
+silly :-).
+
+The 2 parameters listed here are those you would normally pass into C<hash2tree()>, but you are not limited to
+these parameters.
+
+=head1 Method: get('Name of object attribute')
+
+Returns the value of the named attribute. These attributes are discussed above, in the
+section called 'Constructor and initialization'.
+
+The demo example/hobbit.cgi calls this method a number of times.
+
+=head1 Method: get_node([current_id => $id])
+
+Returns a hash ref.
+
+The [] refer to an optional parameter, not to an array ref.
+
+This method uses the value of current_id to find and return the node corresponding to current_id.
+
+If current_id is '', the get_node returns the value you previously passed in for the hashref option.
+
+=head1 Method: id2key([current_id => $id])
 
 Returns a string.
 
-Converts the internal representation of the data into HTML, and returns that.
+The [] refer to an optional parameter, not to an array ref.
 
-=head1 _build_result(...)
+This method converts a node id, eg retrieved from the path info, into a string which contains,
+in order, all hash keys required to find the node within the tree.
 
-Used internally.
+The hash keys are separated by $;, aka $SUBSCRIPT_SEPARATOR.
 
-=head1 css([$new_css])
+The demo example/hobbit.cgi has an example which uses this method.
 
-Returns a string of HTML containing a style-sheet for submit buttons.
+=head1 Method: key2id([current_key => $key])
 
-Can be used to set the style-sheet, like B<set>(css => $new_css).
+Returns a string.
 
-See ce.cgi for an example.
+The [] refer to an optional parameter, not to an array ref.
 
-=head1 current_id()
+This method converts a string of hash keys, concatenated with $;, into the corresponding
+node id.
 
-Returns the id of the 'current' node.
+By default, this method uses the value of current_key generated by a previous call to C<id2key()>.
 
-=head1 depth($id)
+=head1 Method: key2url([current_key => $key])
 
-Returns the depth of the node whose id is given, or 0.
+Returns a string.
 
-=head1 _depth()
+The [] refer to an optional parameter, not to an array ref.
 
-Used internally.
+This method converts a string of hash keys, concatenated with $;, into the corresponding
+node URL.
 
-Called by B<depth()> via Tree::Nary::traverse.
+By default, this method uses the value of current_key generated by a previous call to C<id2key()>.
 
-=head1 _found()
+=head1 Method: new(...)
 
-Used internally.
+Returns a object of type C<CGI::Explorer>.
 
-Called by File::Find, which means it does not receive $self as its first parameter,
-which means in turn that it must use the class global $myself to access class data.
+See above, in the section called 'Constructor and initialization'.
 
-=head1 from_dir($dir_name)
-
-Returns nothing.
-
-Tells the object to construct its internal representation of the data by parsing
-the names of all sub-directories in the given directory.
-
-Usage:
-
-=over 4
-
-=item *
-
-$tree -> from_dir('/home/rons');
-
-=item *
-
-$tree -> from_dir('D:\My Documents');
-
-=item *
-
-$tree -> from_dir('D:/My Documents');
-
-=back
-
-You call B<as_HTML($q)> later to retrieve a printable version of the data.
-
-See ce.cgi for an example.
-
-=head1 from_hash($hash_ref)
+=head1 Method: set(%arg)
 
 Returns nothing.
 
-Tells the object to construct its internal representation of the data by extracting
-information from the given hash.
+This allows you to set any option after calling the constructor.
 
-You would call B<as_HTML($q)> later to retrieve a printable version of the data.
+Eg: $explorer -> set(css => '/css/even_better.css');
 
-Each key in %$hash_ref is a unique positive integer, and points to a hash ref with these
-sub keys:
+=head1 Icons for Nodes
 
-=over 4
+C<CGI::Explorer> ships with an images/ directory containing 1 or 2 (open/closed) PNGs
+for each icon.
 
-=item *
+Most of these icons are those shipped by Emil A Eklund in his xtree package.
 
-id - A unique positive integer, different for each node
+I have added 3 icons to the set, all from this web site:
 
-This is the identifier of this node. It is displayed with the constructor option
-B<new>(show_id => 1), which is the default.
-
-Yes, this is a copy of the key within $hash_ref, for use within
-Tree::Nary-dependent code.
-
-=item *
-
-name - A string
-
-This is the name of this node. It is displayed with the constructor option
-B<new>(show_name => 1), which is the default.
-
-=item *
-
-parent_id - An integer
-
-This is the identifier of the parent of this node.
-
-The relationship between id and parent_id is what makes the data a tree.
-
-0 means the node has no parent, ie this node is a child of a virtual root node.
-By virtual, I mean each C<CGI::Explorer> object creates its own root node, so that you
-do not have to.
-
-If you do have your own root node, with id 1 (say), then your root node's parent will
-still be 0, and your next-level nodes will all have a parent id of 1.
-
-=back
-
-See ce.cgi for an example.
-
-=head1 get($option)
-
-Returns the current value of the given option, or undef if the option is unknown.
-
-$tree -> get('css_background') returns 'white', by default.
-
-=head1 image($icon_id, $new_image)
-
-Returns the file name of the image for the given icon id.
-
-Sets a new image file name for the given icon id.
-
-See ce.cgi for an example.
-
-The prefixes are:
+http://www.geocities.com/windowsicons/
 
 =over 4
 
 =item *
 
-	'root' - The root icon
+open.png
+
+Collection: Replacements for Win95/98 system-icons.
+
+Original icon file: foldrs02.ico.
 
 =item *
 
-	'**' - The current icon
+shut.png
+
+Collection: Replacements for Win95/98 system-icons.
+
+Original icon file: foldrs01.ico.
 
 =item *
 
-	'-L' - An open node with no siblings below it
+current.png
 
-=item *
+Collection: Pointers, arrows and hands.
 
-	'--' - An open node with siblings below it
-
-=item *
-
-	'+L' - A closed node with no siblings below it
-
-=item *
-
-	'+-' - A closed node with siblings below it
-
-=item *
-
-	' L' - A childless node with no siblings below it
-
-=item *
-
-	' -' - A childless node with siblings below it
-
-=item *
-
-	'&nbsp;&nbsp;' - A horizontal spacer
-
-=item *
-
-	'| ' - A vertical connector
+Original icon file: 'arrow #3.ico'.
 
 =back
 
-Note: These are indented because of a bug in pod2html: It complains about '-L' when
-that string is in column 1.
-
-=head1 name()
-
-Returns the name of the 'current' node.
-
-=head1 parent_id()
-
-Returns the id of the parent of the 'current' node.
-
-=head1 set()
-
-Returns nothing.
-
-Used to set a new value for any option, after a call to B<new()>.
-
-B<set()> takes the same parameters as B<new()>.
-
-=head1 state($q)
-
-Returns the open/closed state of all nodes.
-
-Tells the object to update its internal representation of the data by recovering
-CGI form field data from the given CGI object.
-
-Warning: This method can only be called after B<from_dir()> or B<from_hash()>.
-
-Warning: You B<must> use the return value as a field, presumably hidden, in a form,
-in your script so that the value can do a round trip out to the browser and back.
-This way the value can be recovered by the next invocation of your script.
-
-This is the mechanism C<CGI::Explorer> uses to maintain the open/closed state of each
-node. State maintenance is a quite a complex issue. For details, see:
-
-	Writing Apache Modules with Perl and C
-	Lincoln Stein and Doug MacEachern
-	O'Reilly
-	1-56592-567-X
-	Chapter 5 'Maintaining State'
-
-You can see the problem: When you close and then re-open a node, you expect all child
-nodes to be restored to the open/close state they were in before the node was closed.
-
-With a program like Windows Explorer, this is simple, since the program remains in
-RAM, running, all the time nodes are being clicked. Thus it can maintain the state of
-each node in its own (process) memory.
-
-With a CGI script, 2 separate invocations of the script must maintain state outside
-their own memory. I have chosen to use (hidden) form fields in C<CGI::Explorer>.
-
-See ce.cgi for an example.
-
-The form fields have these names:
-
-=over 4
-
-=item *
-
-explorer_id_(\d+) - The id of the node clicked on
-
-There is 1 such form field per node.
-
-The click on this node, or the text of this node (when using click_text => 1), is
-what submitted the form. (\d+) is a unique positive integer.
-
-Your CGI script does not need to output these form fields. B<as_HTML($q)> does this
-for you.
-
-=item *
-
-explorer_state - The open/closed state of all nodes. Its value is a string
-
-Your CGI script must output this value.
-
-See ce.cgi for an example.
-
-=back
+The make file does not install this images/ directory automatically. You must install it
+manually under the web server's document root.
 
 =head1 Required Modules
 
-=over 4
+None, not even CGI.pm. Well OK, one - Exporter.
 
-=item *
-
-Tree::Nary. Not shipped with Perl. Get it from a CPAN near you
-
-=back
+In particular, the fine module Tree::Nary, used in V 1 of C<CGI::Explorer>, is
+no longer needed.
 
 =head1 Changes
 
 See Changes.txt.
 
-=head1 AUTHOR
+=head1 Credits
+
+C<CGI::Explorer> V 2 depends heavily on the superb package xtree, written by Emil A Eklund,
+and in fact my module is no more than a Perl wrapper around xtree.
+
+Please visit the web site http://www.eae.net (from his initials) where more goodies by
+Emil and his colleague Erik Arvidsson are on display.
+
+=head1 Unused Namespace - DBIx::CSS::TreeMenu
+
+In the POD for 2 recent modules, I intimated I was going to release a module called
+DBIx::CSS::TreeMenu, which of course was to be based on xtree.
+
+However, I've since decided to incorporate these ideas into C<CGI::Explorer> V 2.
+
+There is clearly no need for the current module to be linked into the DBIx:: namespace.
+Further, CSS is a mechanism used, and while it could be in the namespace, I no longer think
+that is appropriate. Otherwise, any module using CSS would have CSS:: in it's name,
+and taken to the illogical extreme, all modules would be in the Perl:: namespace!
+
+So, I'm abandoning all plans to issue a module called DBIx::CSS::TreeMenu.
+
+However, I still have my eye on another package, by Erik Arvidsson, called tabpane.
+I am intending to put a Perl wrapper around tabpane, but have not yet decided on a
+Perl module name.
+
+=head1 Author
 
 C<CGI::Explorer> was written by Ron Savage I<E<lt>ron@savage.net.auE<gt>> in 2001.
 
 Home page: http://savage.net.au/index.html
 
-=head1 COPYRIGHT
+=head1 Copyright
 
 Australian copyright (c) 2001, Ron Savage. All rights reserved.
 

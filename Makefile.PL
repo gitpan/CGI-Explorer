@@ -4,9 +4,8 @@ use ExtUtils::MakeMaker;
 # the contents of the Makefile that is written.
 
 print "\n";
-print "After installation of CGI::Explorer, you must copy the /images \n";
-print "directory from the distribution to your web server's document root. \n";
-print "Then copy ce.pl to your cgi-bin directory, and make it executable. \n";
+print "After installation of CGI::Explorer, you must copy the 3 directories \n";
+print "css/, images/ and js/ from the distro to your web server's doc root. \n";
 print "\n";
 
 WriteMakefile
@@ -27,6 +26,6 @@ WriteMakefile
 	},
 	DISTNAME			=> 'CGI-Explorer',
 	NAME				=> 'CGI::Explorer',
-	PREREQ_PM			=> {'Tree::Nary' => 1.0},
+	PREREQ_PM			=> {},
 	VERSION_FROM		=> 'Explorer.pm',
 );

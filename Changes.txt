@@ -1,6 +1,23 @@
 Revision history for Perl extension CGI::Explorer.
 
-1.14  Sat Oct 26 14:29:00
+2.00  Tue Dec 10 20:05:00 2002
+	- Note: The API for V 2 has nothing in common with the API for V 1
+	- Rewrite to use xtree by Emil A Eklund http://webfx.eae.net/
+		This means mouse clicks which expand and contract sub-trees
+		are handled by JavaScript in the client, and so do not need
+		to send a message on a round trip to the server and back
+	- Ship Eklund's files xtree.css and xtree.js
+	- Use Eklund's files for the images, too, and 3 extra images (see POD)
+	- Ship a demo, hobbit-hash.cgi, which displays a hash tree.
+		This script does not require any other modules
+	- Ship a demo pair, bootstrap-hobbit.pl which creates a database table, and
+		hobbit.cgi which reads and displays a database table as a hash tree.
+		These 2 scripts require DBIx::Hash2Table and DBIx::Table2Hash
+	- Document how to use hobbit.cgi as an Apache V 2 script
+	- Add a trivial test script t/test.t, which is actually a copy of test.pl
+	- Rewrite the documentation
+
+1.14  Sat Oct 26 14:29:00 2002
 	- Minor documentation changes. No need to upgrade
 
 1.13  Sun May 12 13:12:11 2002
