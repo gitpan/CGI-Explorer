@@ -56,7 +56,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw(
 
 );
-our $VERSION = '2.02';
+our $VERSION = '2.03';
 our $myself;
 
 # -----------------------------------------------
@@ -390,7 +390,7 @@ Neither the module CGI.pm, nor any of that kidney, are used by this module.
 The makefile will install /perl/site/lib/CGI/Explorer.pm.
 
 You must manually install <Document Root>/css/xtree.css, <Document Root>/js/xtree.js, and
-<Document Root>/images/*.
+<Document Root>/images/explorer/*.
 
 If you choose to put the CSS elsewhere, you'll need to call new(css => '/new/path/xtree.css').
 
@@ -399,7 +399,7 @@ If you choose to put the JavaScript elsewhere, you'll need to call new(js => '/n
 These last 2 options can be used together, and can be passed into C<hash2tree()> or C<set()> rather than
 C<new()>.
 
-If you choose to put the images elsewhere, you'll need to edit lines 62 .. 74 of xtree.js V 1.15.
+If you choose to put the images elsewhere, you'll need to edit lines 69 .. 81 of xtree.js V 1.17.
 
 =head1 Warning: V 1 'v' V 2
 

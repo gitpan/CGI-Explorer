@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------\
-|                       Cross Browser Tree Widget 1.15                        |
+|                       Cross Browser Tree Widget 1.17                        |
 |-----------------------------------------------------------------------------|
 |                          Created by Emil A Eklund                           |
 |                  (http://webfx.eae.net/contact.html#emil)                   |
@@ -37,6 +37,8 @@
 | the original  source or any  software  utilizing a GPL  component, such  as |
 | this, is also licensed under the GPL license.                               |
 |-----------------------------------------------------------------------------|
+| Dependencies: xtree.css (To set up the CSS of the tree classes)             |
+|-----------------------------------------------------------------------------|
 | 2001-01-10 | Original Version Posted.                                       |
 | 2001-03-18 | Added getSelected and get/setBehavior  that can make it behave |
 |            | more like windows explorer, check usage for more information.  |
@@ -54,24 +56,29 @@
 | 2002-10-29 | (1.15) Last changes broke more than they fixed. This version   |
 |            | is based on 1.13 and fixes the bugs 1.14 fixed withou breaking |
 |            | lots of other things.                                          |
+| 2003-02-15 | The  selected node can now be made visible even when  the tree |
+|            | control  loses focus.  It uses a new class  declaration in the |
+|            | css file '.webfx-tree-item a.selected-inactive', by default it |
+|            | puts a light-gray rectangle around the selected node.          |
+| 2003-03-16 | Adding target support after lots of lobbying...                |
 |-----------------------------------------------------------------------------|
-| Created 2000-12-11 | All changes are in the log above. | Updated 2002-08-29 |
+| Created 2000-12-11 | All changes are in the log above. | Updated 2003-03-16 |
 \----------------------------------------------------------------------------*/
 
 var webFXTreeConfig = {
-	rootIcon        : '/images/foldericon.png',
-	openRootIcon    : '/images/openfoldericon.png',
-	folderIcon      : '/images/foldericon.png',
-	openFolderIcon  : '/images/openfoldericon.png',
-	fileIcon        : '/images/file.png',
-	iIcon           : '/images/I.png',
-	lIcon           : '/images/L.png',
-	lMinusIcon      : '/images/Lminus.png',
-	lPlusIcon       : '/images/Lplus.png',
-	tIcon           : '/images/T.png',
-	tMinusIcon      : '/images/Tminus.png',
-	tPlusIcon       : '/images/Tplus.png',
-	blankIcon       : '/images/blank.png',
+	rootIcon        : '/images/explorer/foldericon.png',
+	openRootIcon    : '/images/explorer/openfoldericon.png',
+	folderIcon      : '/images/explorer/foldericon.png',
+	openFolderIcon  : '/images/explorer/openfoldericon.png',
+	fileIcon        : '/images/explorer/file.png',
+	iIcon           : '/images/explorer/I.png',
+	lIcon           : '/images/explorer/L.png',
+	lMinusIcon      : '/images/explorer/Lminus.png',
+	lPlusIcon       : '/images/explorer/Lplus.png',
+	tIcon           : '/images/explorer/T.png',
+	tMinusIcon      : '/images/explorer/Tminus.png',
+	tPlusIcon       : '/images/explorer/Tplus.png',
+	blankIcon       : '/images/explorer/blank.png',
 	defaultText     : 'Tree Item',
 	defaultAction   : 'javascript:void(0);',
 	defaultBehavior : 'classic',
@@ -219,17 +226,17 @@ WebFXTreeAbstractNode.prototype.doExpand = function() {
 	if (webFXTreeHandler.behavior == 'classic') { document.getElementById(this.id + '-icon').src = this.openIcon; }
 	if (this.childNodes.length) {  document.getElementById(this.id + '-cont').style.display = 'block'; }
 	this.open = true;
-	if (webFXTreeConfig.usePersistence)
+	if (webFXTreeConfig.usePersistence) {
 		webFXTreeHandler.cookies.setCookie(this.id.substr(18,this.id.length - 18), '1');
-}
+}	}
 
 WebFXTreeAbstractNode.prototype.doCollapse = function() {
 	if (webFXTreeHandler.behavior == 'classic') { document.getElementById(this.id + '-icon').src = this.icon; }
 	if (this.childNodes.length) { document.getElementById(this.id + '-cont').style.display = 'none'; }
 	this.open = false;
-	if (webFXTreeConfig.usePersistence)
+	if (webFXTreeConfig.usePersistence) {
 		webFXTreeHandler.cookies.setCookie(this.id.substr(18,this.id.length - 18), '0');
-}
+}	}
 
 WebFXTreeAbstractNode.prototype.expandAll = function() {
 	this.expandChildren();
@@ -291,10 +298,9 @@ function WebFXTree(sText, sAction, sBehavior, sIcon, sOpenIcon) {
 	this.icon      = sIcon || webFXTreeConfig.rootIcon;
 	this.openIcon  = sOpenIcon || webFXTreeConfig.openRootIcon;
 	/* Defaults to open */
-	if (webFXTreeConfig.usePersistence)
+	if (webFXTreeConfig.usePersistence) {
 		this.open  = (webFXTreeHandler.cookies.getCookie(this.id.substr(18,this.id.length - 18)) == '0')?false:true;
-	else
-		this.open  = true;
+	} else { this.open  = true; }
 	this.folder    = true;
 	this.rendered  = false;
 	this.onSelect  = null;
@@ -355,15 +361,18 @@ WebFXTree.prototype.keydown = function(key) {
 }
 
 WebFXTree.prototype.toString = function() {
-	var str = "<div id=\"" + this.id + "\" ondblclick=\"webFXTreeHandler.toggle(this);\" class=\"webfx-tree-item\" onkeydown=\"return webFXTreeHandler.keydown(this, event)\">";
-	str += "<img id=\"" + this.id + "-icon\" class=\"webfx-tree-icon\" src=\"" + ((webFXTreeHandler.behavior == 'classic' && this.open)?this.openIcon:this.icon) + "\" onclick=\"webFXTreeHandler.select(this);\"><a href=\"" + this.action + "\" id=\"" + this.id + "-anchor\" onfocus=\"webFXTreeHandler.focus(this);\" onblur=\"webFXTreeHandler.blur(this);\">" + this.text + "</a></div>";
-	str += "<div id=\"" + this.id + "-cont\" class=\"webfx-tree-container\" style=\"display: " + ((this.open)?'block':'none') + ";\">";
+	var str = "<div id=\"" + this.id + "\" ondblclick=\"webFXTreeHandler.toggle(this);\" class=\"webfx-tree-item\" onkeydown=\"return webFXTreeHandler.keydown(this, event)\">" +
+		"<img id=\"" + this.id + "-icon\" class=\"webfx-tree-icon\" src=\"" + ((webFXTreeHandler.behavior == 'classic' && this.open)?this.openIcon:this.icon) + "\" onclick=\"webFXTreeHandler.select(this);\">" +
+		"<a href=\"" + this.action + "\" id=\"" + this.id + "-anchor\" onfocus=\"webFXTreeHandler.focus(this);\" onblur=\"webFXTreeHandler.blur(this);\"" +
+		(this.target ? " target=\"" + this.target + "\"" : "") +
+		">" + this.text + "</a></div>" +
+		"<div id=\"" + this.id + "-cont\" class=\"webfx-tree-container\" style=\"display: " + ((this.open)?'block':'none') + ";\">";
+	var sb = [];
 	for (var i = 0; i < this.childNodes.length; i++) {
-		str += this.childNodes[i].toString(i, this.childNodes.length);
+		sb[i] = this.childNodes[i].toString(i, this.childNodes.length);
 	}
-	str += "</div>";
 	this.rendered = true;
-	return str;
+	return str + sb.join("") + "</div>";
 };
 
 /*
@@ -374,10 +383,9 @@ function WebFXTreeItem(sText, sAction, eParent, sIcon, sOpenIcon) {
 	this.base = WebFXTreeAbstractNode;
 	this.base(sText, sAction);
 	/* Defaults to close */
-	if (webFXTreeConfig.usePersistence)
+	if (webFXTreeConfig.usePersistence) {
 		this.open = (webFXTreeHandler.cookies.getCookie(this.id.substr(18,this.id.length - 18)) == '1')?true:false;
-	else
-		this.open = false;
+	} else { this.open = false; }
 	if (sIcon) { this.icon = sIcon; }
 	if (sOpenIcon) { this.openIcon = sOpenIcon; }
 	if (eParent) { eParent.add(this); }
@@ -515,16 +523,19 @@ WebFXTreeItem.prototype.toString = function (nItem, nItemCount) {
 	}
 	else if (!this.icon) { this.icon = webFXTreeConfig.fileIcon; }
 	var label = this.text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-	var str = "<div id=\"" + this.id + "\" ondblclick=\"webFXTreeHandler.toggle(this);\" class=\"webfx-tree-item\" onkeydown=\"return webFXTreeHandler.keydown(this, event)\">";
-	str += indent;
-	str += "<img id=\"" + this.id + "-plus\" src=\"" + ((this.folder)?((this.open)?((this.parentNode._last)?webFXTreeConfig.lMinusIcon:webFXTreeConfig.tMinusIcon):((this.parentNode._last)?webFXTreeConfig.lPlusIcon:webFXTreeConfig.tPlusIcon)):((this.parentNode._last)?webFXTreeConfig.lIcon:webFXTreeConfig.tIcon)) + "\" onclick=\"webFXTreeHandler.toggle(this);\">"
-	str += "<img id=\"" + this.id + "-icon\" class=\"webfx-tree-icon\" src=\"" + ((webFXTreeHandler.behavior == 'classic' && this.open)?this.openIcon:this.icon) + "\" onclick=\"webFXTreeHandler.select(this);\"><a href=\"" + this.action + "\" id=\"" + this.id + "-anchor\" onfocus=\"webFXTreeHandler.focus(this);\" onblur=\"webFXTreeHandler.blur(this);\">" + label + "</a></div>";
-	str += "<div id=\"" + this.id + "-cont\" class=\"webfx-tree-container\" style=\"display: " + ((this.open)?'block':'none') + ";\">";
+	var str = "<div id=\"" + this.id + "\" ondblclick=\"webFXTreeHandler.toggle(this);\" class=\"webfx-tree-item\" onkeydown=\"return webFXTreeHandler.keydown(this, event)\">" +
+		indent +
+		"<img id=\"" + this.id + "-plus\" src=\"" + ((this.folder)?((this.open)?((this.parentNode._last)?webFXTreeConfig.lMinusIcon:webFXTreeConfig.tMinusIcon):((this.parentNode._last)?webFXTreeConfig.lPlusIcon:webFXTreeConfig.tPlusIcon)):((this.parentNode._last)?webFXTreeConfig.lIcon:webFXTreeConfig.tIcon)) + "\" onclick=\"webFXTreeHandler.toggle(this);\">" +
+		"<img id=\"" + this.id + "-icon\" class=\"webfx-tree-icon\" src=\"" + ((webFXTreeHandler.behavior == 'classic' && this.open)?this.openIcon:this.icon) + "\" onclick=\"webFXTreeHandler.select(this);\">" +
+		"<a href=\"" + this.action + "\" id=\"" + this.id + "-anchor\" onfocus=\"webFXTreeHandler.focus(this);\" onblur=\"webFXTreeHandler.blur(this);\"" +
+		(this.target ? " target=\"" + this.target + "\"" : "") +
+		">" + label + "</a></div>" +
+		"<div id=\"" + this.id + "-cont\" class=\"webfx-tree-container\" style=\"display: " + ((this.open)?'block':'none') + ";\">";
+	var sb = [];
 	for (var i = 0; i < this.childNodes.length; i++) {
-		str += this.childNodes[i].toString(i,this.childNodes.length);
+		sb[i] = this.childNodes[i].toString(i,this.childNodes.length);
 	}
-	str += "</div>";
 	this.plusIcon = ((this.parentNode._last)?webFXTreeConfig.lPlusIcon:webFXTreeConfig.tPlusIcon);
 	this.minusIcon = ((this.parentNode._last)?webFXTreeConfig.lMinusIcon:webFXTreeConfig.tMinusIcon);
-	return str;
+	return str + sb.join("") + "</div>";
 }

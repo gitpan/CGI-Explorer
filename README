@@ -42,7 +42,7 @@ Installation
     The makefile will install /perl/site/lib/CGI/Explorer.pm.
 
     You must manually install <Document Root>/css/xtree.css, <Document
-    Root>/js/xtree.js, and <Document Root>/images/*.
+    Root>/js/xtree.js, and <Document Root>/images/explorer/*.
 
     If you choose to put the CSS elsewhere, you'll need to call new(css =>
     '/new/path/xtree.css').
@@ -53,8 +53,8 @@ Installation
     These last 2 options can be used together, and can be passed into
     "hash2tree()" or "set()" rather than "new()".
 
-    If you choose to put the images elsewhere, you'll need to edit lines 62
-    .. 74 of xtree.js V 1.15.
+    If you choose to put the images elsewhere, you'll need to edit lines 69
+    .. 81 of xtree.js V 1.17.
 
 Warning: V 1 'v' V 2
     The API for "CGI::Explorer" version 2 is not compatible with the API for
