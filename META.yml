@@ -1,0 +1,15 @@
+--- #YAML:1.0
+name: CGI-Explorer
+version: 2.04
+author:
+  - Ron Savage <ron@savage.net.au>
+abstract: |-
+  A class to manage displaying a hash tree of data, for use in CGI scripts
+license: artistic
+requires:
+  Carp: 0
+build_requires:
+  Test::More: 0
+  Test::Pod: 0
+provides: {}
+generated_by: Module::Build version 0.24

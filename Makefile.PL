@@ -15,17 +15,23 @@ WriteMakefile
 		'AUTHOR' => 'Ron Savage (ron@savage.net.au)',
 		'ABSTRACT' => 'A CGI support module for tree management and display',
     ) : (),
-	clean				=>
+	clean			=>
 	{
-		FILES			=> 'blib/* Makefile MANIFEST CGI-Explorer-*'
+		FILES		=> 'blib/* Makefile MANIFEST CGI-Explorer-*'
 	},
-	dist				=>
+	dist			=>
 	{
-		COMPRESS		=> 'gzip',
-		SUFFIX			=> 'gz'
+		COMPRESS	=> 'gzip',
+		SUFFIX		=> 'gz'
 	},
-	DISTNAME			=> 'CGI-Explorer',
-	NAME				=> 'CGI::Explorer',
-	PREREQ_PM			=> {},
-	VERSION_FROM		=> 'Explorer.pm',
+	DISTNAME		=> 'CGI-Explorer',
+	NAME			=> 'CGI::Explorer',
+	PL_FILES		=> {},
+	PREREQ_PM		=>
+	{
+		Carp		=> 0,
+		Test::More	=> 0,
+		Test::Pod	=> 0,
+	},
+	VERSION_FROM	=> 'lib/CGI/Explorer.pm',
 );
