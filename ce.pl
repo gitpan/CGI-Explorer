@@ -1,4 +1,4 @@
-#!D:/Perl/Bin/Perl
+#!D:/perl/bin/perl
 #
 # Name:
 #	ce.pl.
@@ -12,15 +12,14 @@ use warnings;
 
 use CGI qw/fieldset legend/;
 use CGI::Explorer;
-use Tree::Nary;
 
 # ---------------------------------------------------------------------------------
 
 my(%hash) =
 (
-	1	=>
+	9	=>
 	{
-		id			=> 1,
+		id			=> 9,
 		name		=> 'Great grand gnome',
 		parent_id	=> 0,
 
@@ -29,14 +28,14 @@ my(%hash) =
 	{
 		id			=> 2,
 		name		=> 'Great gnome',
-		parent_id	=> 1,
+		parent_id	=> 9,
 
 	},
 	3	=>
 	{
 		id			=> 3,
 		name		=> 'Grand gnome',
-		parent_id	=> 1,
+		parent_id	=> 9,
 
 	},
 	4	=>
@@ -80,15 +79,17 @@ my(%hash) =
 
 my($q)		= CGI -> new();
 my($tree)	= CGI::Explorer -> new();
-my($dir)	= 'D:/Program Files/Apache Group/Apache';
+my($dir)	= '/home/rons';
+
+$tree -> image('root', 'explorer_server.gif');
 
 # Choose 1 of these 2 alternatives.
 
 # 1:
-$tree -> from_dir($dir);
+#$tree -> from_dir($dir);
 
 # 2:
-#$tree -> from_hash(\%hash);
+$tree -> from_hash(\%hash);
 
 my($state) = $tree -> state($q); # Must follow from_dir() or from_hash().
 
@@ -102,7 +103,8 @@ my($tree_set) =
 		$q -> legend
 		(
 			{style => 'color: maroon'},
-			'Tree'
+			"CGI::Explorer V $CGI::Explorer::VERSION " .
+			$q -> img({src => '/images/explorer_root.gif', align => 'absmiddle', width => 17, height => 17})
 		),
 		$tree -> as_HTML($q)
 	);
@@ -120,7 +122,7 @@ my($result_set) =
 		$q -> legend
 		(
 			{style => 'color: maroon'},
-			'Result'
+			'Node clicked'
 		),
 		'Id: ' . $tree -> current_id() . '. Name: ' . $tree -> name()
 	);
@@ -130,6 +132,7 @@ my($result_set) =
 
 print	$q -> header(),
 		$q -> start_html(),
+		$tree -> css(),
 		$q -> start_form({action => $q -> url()}),
 		$q -> hidden({name => 'explorer_state', value => $state, force => 1}),
 		$q -> table

@@ -1,0 +1,35 @@
+Revision history for Perl extension CGI::Explorer.
+
+1.10  Sat Mar 11 14:00:00 2001
+	- Change
+		use CGI qw/fieldset legend/;
+		to
+		use CGI;
+		in Explorer.pm. These methods are only used by ce.pl.
+	- Add method image($icon_id, $new_image) to allow setting the image file name
+		of any icon. See POD for a list of icon ids.
+	- Add constructor option css to set the style-sheet for submit buttons.
+		A default style-sheet is provided. Yes, I know the submit button text,
+		using the style-sheet, is really too wide, but as you'll see from the source,
+		I cannot find a style-sheet command to make it narrower.
+	- Add method css() to set or retrieve the style-sheet. As with other new() options,
+		you can also use method set(css => $new_css) to set the style-sheet after
+		construction.
+	- Rename constructor option from 'a_href' to 'click_text', since I now use
+		submit buttons and not a hrefs. The default for click_text is 1,
+		whereas for a_href it was 0.
+		Specifically, new(click_text => 1) has the effect of making the text
+		(node id and/or name) [to the right of the node] into a submit button,
+		formatted nicely via the css option. Clicking this text submits the form
+		and sets the current node. But, if the node has children, it does not change
+		the open/closed status of the node, whereas clicking on the node icon toggles
+		the status.
+	- Remove restriction that there had to be a node id == 1.
+	- Ship explorer_server.gif and explorer_server.png for variety, and for use
+		within ce.pl.
+	- Various minor changes to the docs.
+
+1.00  Sat Feb 24 12:37:29 2001
+	- original version; created by h2xs 1.20 with options
+		-A -X -f -n CGI::Explorer -v 1.00
+

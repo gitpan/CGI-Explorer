@@ -1,5 +1,5 @@
 ce.pl
-Changes
+Changes.txt
 Explorer.pm
 Makefile.PL
 MANIFEST
@@ -7,8 +7,6 @@ Readme.txt
 test.pl
 images/explorer_current_node.gif
 images/explorer_current_node.png
-images/explorer_root.gif
-images/explorer_root.png
 images/explorer_elbow.gif
 images/explorer_elbow.png
 images/explorer_minus_elbow.gif
@@ -19,6 +17,10 @@ images/explorer_plus_elbow.gif
 images/explorer_plus_elbow.png
 images/explorer_plus_tee.gif
 images/explorer_plus_tee.png
+images/explorer_root.gif
+images/explorer_root.png
+images/explorer_server.gif
+images/explorer_server.png
 images/explorer_tee.gif
 images/explorer_tee.png
 images/explorer_transparent.gif

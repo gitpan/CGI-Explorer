@@ -11,7 +11,7 @@ use integer;
 use strict;
 use warnings;
 
-use CGI qw/fieldset legend/;
+use CGI;
 use File::Find;
 use Tree::Nary;
 
@@ -37,7 +37,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw(
 	
 );
-our $VERSION = '1.00';
+our $VERSION = '1.10';
 
 # ---------------------------------------------------------------------------------
 
@@ -55,18 +55,123 @@ use vars qw($myself);
 {
 	my(%_attr_data) =
 	(
-		_a_href			=> 0,
+		_click_text		=> 1,
+		_css			=> <<EOS,
+<style type = 'text/css'>
+<!--
+input.explorer
+{
+background:white;
+border-top-width:0px;
+border-bottom-width:0px;
+border-left-width:0px;
+border-right-width:0px;
+color:navy;
+font:8pt tahoma;
+font-weight:bold;
+/* These are all attempts to shrink the horizontal size of the submit button :-(.
+border-style:solid;
+display:compact;
+left:0%;
+margin-left:0px;
+padding:0%;
+padding-left:0px;
+padding-right:0px;
+text-align:left;
+text-indent:-3ex;
+white-space:pre;
+width:auto;
+*/
+}
+-->
+</style>
+EOS
+		_image_dir		=> '/images',
 		_show_current	=> 1,
 		_show_id		=> 1,
 		_show_name		=> 1,
-		_image_dir		=> '/images',
 	);
+
+	my(%_icon_data) =
+	(
+		'root'	=>
+		{
+			clickable	=> 0,
+			image		=> 'explorer_root.gif',
+		},
+		'**'	=>
+		{
+			clickable	=> 1,
+			image		=> 'explorer_current_node.gif',
+		},
+		'-L'	=>
+		{
+			clickable	=> 1,
+			image		=> 'explorer_minus_elbow.gif',
+		},
+		'--'	=>
+		{
+			clickable	=> 1,
+			image		=> 'explorer_minus_tee.gif',
+		},
+		'+L'	=>
+		{
+			clickable	=> 1,
+			image		=> 'explorer_plus_elbow.gif',
+		},
+		'+-'	=>
+		{
+			clickable	=> 1,
+			image		=> 'explorer_plus_tee.gif',
+		},
+		' L'	=>
+		{
+			clickable	=> 0,
+			image		=> 'explorer_elbow.gif',
+		},
+		' -'	=>
+		{
+			clickable	=> 0,
+			image		=> 'explorer_tee.gif',
+		},
+		'  '	=>
+		{
+			clickable	=> 0,
+			image		=> 'explorer_transparent.gif',
+		},
+		'| '	=>
+		{
+			clickable	=> 0,
+			image		=> 'explorer_vertical.gif',
+		},
+	);
+
+	sub _clickable
+	{
+		my($self, $icon_id) = @_;
+
+		$_icon_data{$icon_id}{'clickable'};
+	}
 
 	sub _default_for
 	{
 		my($self, $attr_name) = @_;
 
 		$_attr_data{$attr_name};
+	}
+
+	sub _image
+	{
+		my($self, $icon_id, $new_image)	= @_;
+		my($old_image)					= '';
+
+		if ($_icon_data{$icon_id})
+		{
+			$old_image						= $_icon_data{$icon_id}{'image'};
+			$_icon_data{$icon_id}{'image'}	= $new_image if ($new_image);
+		}
+
+		$old_image;
 	}
 
 	sub _standard_keys
@@ -85,53 +190,40 @@ sub as_HTML
 
 	my(@row);
 
-	my($count)		= 0;
-	my(%translate)	=
-	(
-		'root'	=> "$$self{'_image_dir'}/explorer_root.gif",
-		'-L'	=> "$$self{'_image_dir'}/explorer_minus_elbow.gif",
-		'--'	=> "$$self{'_image_dir'}/explorer_minus_tee.gif",
-		'+L'	=> "$$self{'_image_dir'}/explorer_plus_elbow.gif",
-		'+-'	=> "$$self{'_image_dir'}/explorer_plus_tee.gif",
-		' L'	=> "$$self{'_image_dir'}/explorer_elbow.gif",
-		' -'	=> "$$self{'_image_dir'}/explorer_tee.gif",
-		'**'	=> "$$self{'_image_dir'}/explorer_current_node.gif",
-		'  '	=> "$$self{'_image_dir'}/explorer_transparent.gif",
-		'| '	=> "$$self{'_image_dir'}/explorer_vertical.gif",
-	);
+	my($count)	= 0;
+	my($image)	= $self -> _image('root');
 
-	push(@row, $q -> img({src => $translate{'root'}, align => 'absmiddle'}) );
+	push(@row, $q -> img({src => "$$self{'_image_dir'}/$image", align => 'absmiddle'}) );
 
 	for my $line (@{$$self{'_result'} })
 	{
 		$count++;
-		my(@prefix);
+		my(@icon_id);
 
-		my($prefix, $id, $name)	= split(/$;/, $line);
-		@prefix = $prefix		=~ /../g;
-		my($explorer_id)		= "explorer_id_$id";
-		my($s)					= '';
-		for $prefix (@prefix)
+		my($icon_id, $id, $name)	= split(/$;/, $line);
+		@icon_id = $icon_id			=~ /../g;
+		my($explorer_id)			= "explorer_id_$id";
+		my($s)						= '';
+
+		for $icon_id (@icon_id)
 		{
-			# We need width & height because the transparent gif is 1 x 1 :-|.
-			# Even worse, the db gif is 21 x 17.
+			# We need width & height because the transparent gif is 1 x 1.
+			# Even worse, the root gif is 21 x 17.
 
-			my($image)	= $translate{$prefix};
-			$image		= ($image =~ /(plus|minus)/)
+			my($image)	= $self -> _image($icon_id);
+			$image		= "$$self{'_image_dir'}/$image";
+			$image		= ($self -> _clickable($icon_id))
 							? $q -> image_button({name => $explorer_id, src => $image, align => 'absmiddle', width => 17, height => 17})
-							: ($prefix eq '**')
-								? $q -> image_button({name => $explorer_id, src => $image, align => 'absmiddle', width => 17, height => 17})
-								: $q -> img({src => $image, align => 'absmiddle', width => 17, height => 17});
+							: $q -> img({src => $image, align => 'absmiddle', width => 17, height => 17});
 			$s			.= $image;
 		}
 
 		my($text)	= ($$self{'_show_id'}) ? $id : '';
 		$text		= $$self{'_show_name'} ? ($text ? "$text: $name" : $name) : $text;
-		$text		=	$q -> a
+		$text		=	$q -> submit
 				 		(
-							{href => $q -> url() },
-							$text
-						) if ($$self{'_a_href'});
+							{class => 'explorer', name => $explorer_id, value => $text}
+						) if ($$self{'_click_text'});
 
 		push(@row,	($s .
 						$q -> font
@@ -173,45 +265,57 @@ sub _build_result
 	{
 		# 1. Determine the prefix for the current node.
 
-		my($node)		= $node[$i];
-		my($new_prefix)	= $prefix;
+		my($node)			= $node[$i];
+		my($id)				= $$node{'data'}{'id'};
+		my($new_icon_id)	= '';
 
 		# If this node has children...
 
 		if (Tree::Nary -> n_children($node) > 0)
 		{
-			if ($$self{'_state'}{$$node{'data'}{'id'} }{'open'})
+			if ($$self{'_state'}{$id}{'open'})
 			{
-				$new_prefix	.= ($$node{'data'}{'last'} ? '-L' : '--');
+				$new_icon_id = ($$node{'data'}{'last'} ? '-L' : '--');
 			}
 			else
 			{
-				$new_prefix	.= ($$node{'data'}{'last'} ? '+L' : '+-');
+				$new_icon_id = ($$node{'data'}{'last'} ? '+L' : '+-');
 			}
 		}
 		else
 		{
-			$new_prefix	.= ($$node{'data'}{'last'} ? ' L' : ' -');
+			$new_icon_id = ($$node{'data'}{'last'} ? ' L' : ' -');
 		}
 
 		# This node is the 'current' node.
 
-		$new_prefix = $prefix . '**' if ($$self{'_show_current'} && $$node{'data'}{'id'} == $$self{'_current_id'});
+		$new_icon_id = '**' if ($$self{'_show_current'} && $id == $$self{'_current_id'});
 
 		# Warning: The text pushed here is split elsewhere, to recover prefix, id & name.
 
-		push(@{$$self{'_result'} }, "$new_prefix$;$$node{'data'}{'id'}$;$$node{'data'}{'name'}");
+		push(@{$$self{'_result'} }, "$prefix$new_icon_id$;$id$;$$node{'data'}{'name'}");
 
 		# 2. Determine the prefix for the node's children.
 
-		$new_prefix = $prefix . ($$node{'data'}{'last'} ? '  ' : '| ');
+		$new_icon_id = $prefix . ($$node{'data'}{'last'} ? '  ' : '| ');
 
 		# Recurse to process this node's children.
 
-		$self -> _build_result($node, ($level + 1), $new_prefix) if ($$self{'_state'}{$$node{'data'}{'id'} }{'open'});
+		$self -> _build_result($node, ($level + 1), $new_icon_id) if ($$self{'_state'}{$id}{'open'});
 	}
 
 }	# End of _build_result.
+
+# ---------------------------------------------------------------------------------
+
+sub css
+{
+	my($self, $new_css)	= @_;
+	$$self{'_css'}		= $new_css if ($new_css);
+
+	$$self{'_css'};
+
+}	# End of css.
 
 # ---------------------------------------------------------------------------------
 
@@ -355,7 +459,19 @@ sub from_hash
 		}
 	}
 
+	$$self{'_current_id'} = (sort @keys)[0];
+
 }	# End of from_hash.
+
+# ---------------------------------------------------------------------------------
+
+sub image
+{
+	my($self, $icon_id, $new_image) = @_;
+
+	$self -> _image($icon_id, $new_image);
+
+}	# End of name.
 
 # ---------------------------------------------------------------------------------
 
@@ -363,7 +479,7 @@ sub name
 {
 	my($self) = @_;
 
-	$$self{'_name'}{$$self{'_current_id'} };
+	$$self{'_current_id'} ? $$self{'_name'}{$$self{'_current_id'} } : '';
 
 }	# End of name.
 
@@ -375,7 +491,7 @@ sub new
 	my($caller_is_obj)		= ref($caller);
 	my($class)				= $caller_is_obj || $caller;
 	my($self)				= bless({}, $class);
-	$$self{'_current_id'}	= 1;
+	$$self{'_current_id'}	= 0;
 	$$self{'_dir_name'}		= '';
 	$$self{'_dir_bit'}		= 0;
 	$$self{'_name'}			= {};
@@ -411,7 +527,7 @@ sub parent_id
 {
 	my($self) = @_;
 
-	${$$self{'_tree'} }{$$self{'_current_id'} }{'parent_id'};
+	$$self{'_current_id'} ? ${$$self{'_tree'} }{$$self{'_current_id'} }{'parent_id'} : 0;
 
 }	# End of parent_id.
 
@@ -437,12 +553,13 @@ sub set
 
 sub state
 {
-	my($self, $q) = @_;
-
+	my($self, $q)		= @_;
+	my($icon_clicked)	= '';
+	
 	for ($q -> param() )
 	{
-		$$self{'_current_id'} = $1 if (/^explorer_id_(\d+).x$/);
-	}
+		($$self{'_current_id'}, $icon_clicked) = ($1, $2) if (/^explorer_id_(\d+)(.*)/);
+	}							
 
 	if ($q -> param('explorer_state') )
 	{
@@ -456,7 +573,8 @@ sub state
 	
 	# Toggle the 'open' status of the current id.
 
-	$$self{'_state'}{$$self{'_current_id'} }{'open'} = 1 - $$self{'_state'}{$$self{'_current_id'} }{'open'};
+	$$self{'_state'}{$$self{'_current_id'} }{'open'} = 1 - $$self{'_state'}{$$self{'_current_id'} }{'open'}
+		if ($$self{'_current_id'} && $icon_clicked);
 
 	join(';', map{"$_=$$self{'_state'}{$_}{'open'}"} sort{$a <=> $b} keys %{$$self{'_state'} });
 
@@ -474,11 +592,11 @@ C<CGI::Explorer> - A class to manage a tree of data, for use in CGI scripts
 
 =head1 VERSION
 
-This document refers to version 1.00 of C<CGI::Explorer>, released 24-02-2001.
+This document refers to version 1.10 of C<CGI::Explorer>, released 11-Mar-2001.
 
 =head1 SYNOPSIS
 
-This is tested code, altho the she-bang (#!) must start in column 1:
+This is tested code, altho the she-bang (#!) line must start in column 1:
 
 	#!D:/Perl/Bin/Perl
 
@@ -495,12 +613,13 @@ This is tested code, altho the she-bang (#!) must start in column 1:
 
 	$tree -> from_dir($dir);
 	
-	my($state)		= $tree -> state($q); # Must follow from_dir() or from_hash().
+	my($state)	= $tree -> state($q); # Must follow from_dir() or from_hash().
 	my($tree_set)	= $tree -> as_HTML($q);
 	my($result_set)	= 'Id: ' . $tree -> current_id() . '. Name: ' . $tree -> name();
 
 	print	$q -> header(),
 			$q -> start_html(),
+			$tree -> css(),
 			$q -> start_form({action => $q -> url()}),
 			$q -> hidden({name => 'explorer_state', value => $state, force => 1}),
 			$q -> table
@@ -515,23 +634,40 @@ This is tested code, altho the she-bang (#!) must start in column 1:
 			$q -> end_form(),
 			$q -> end_html();
 
+You need only change 2 lines at most, after cutting and pasting it:
+
+=over 4
+
+=item *
+
+#!D:/Perl/Bin/Perl
+
+=item *
+
+my($dir) = 'D:/My Documents/HomePage';
+
+=back
+
 =head1 DESCRIPTION
 
 C<CGI::Explorer> is a support module for CGI scripts. It manages a tree of data, so
-that the script can display the tree, and the user can click on a node in the tree
-to open or close that node.
+that the script can display the tree, and the user can click on B<the icon> of a node
+in the tree to open or close that node.
 
-Opening a node reveals all children of that node, and restores their open/close state.
+Opening a node reveals all children of that node, and restores their open/closed state.
 
 Closing a node hides all children of that node.
+
+Even when using the B<new>(click_text => 1), clicking on B<the text> of a node does
+not toggle the open/closed status of a node.
 
 =head1 Overview
 
 C<CGI::Explorer> reconstructs its internal representation of the tree each time the script
 is invoked.
 
-Some of data comes from the script calling $tree -> from_directory(...) or
-$tree -> from_hash(...), and some of the data comes from CGI form fields returned
+Some of data comes from the script calling B<from_dir()> or
+B<from_hash()>, and some of the data comes from CGI form fields returned
 from the previous invocation of the script.
 
 Specifically, the open/closed state of each node is sent on a round trip from one
@@ -539,7 +675,8 @@ invocation of the script out to the browser, and, via a 'form submit', back to t
 next invocation of the script.
 
 Also, clicking on a node on a form submits the form, and passed the id of the node
-so clicked back to the second invocation of the script.
+so clicked back to the second invocation of the script. When using the B<new()> option
+click_text => 1, clicking on the text of the node also submits the form.
 
 State maintenance - a complex issue - is discussed further below. See the 'state'
 method.
@@ -550,9 +687,9 @@ new(...) returns a C<CGI::Explorer> object.
 
 This is the class's contructor.
 
-A call to new() is equivalent to:
+A call to B<new()> is equivalent to:
 
-new(a_href => 0, image_dir => '/images', show_current => 1, show_id => 1, show_name => 1)
+new(click_text => 0, css => '...', image_dir => '/images', show_current => 1, show_id => 1, show_name => 1)
 
 Options:
 
@@ -560,9 +697,19 @@ Options:
 
 =item *
 
-a_href - Default is 0
+click_text - Default is 1
 
-Make the displayed name of the node an anchor.
+Make the displayed text (id and/or name) of the node a submit button.
+
+=item *
+
+css - Default is <a very long string>. See source code for gory details
+
+Provide a style-sheet for submit buttons, for use when click_text == 1.
+
+A default style-sheet is provided. Yes, I know the submit button text,
+using the style-sheet, is really too wide, but as you'll see from the source,
+I cannot find a style-sheet command to make it narrower.
 
 =item *
 
@@ -625,6 +772,8 @@ update the browser, or try using the GIFs.
 Almost all icons are constrained to a size of 17 x 17. The exception is the icon
 for the root, which is unconstrained, so that you may use any image you wish.
 
+Use the method B<image($icon_id, $image_name)> to change the image file name of an icon.
+
 =head1 as_HTML($q)
 
 Returns a string.
@@ -634,6 +783,14 @@ Converts the internal representation of the data into HTML, and returns that.
 =head1 _build_result(...)
 
 Used internally.
+
+=head1 css([$new_css])
+
+Returns a string of HTML containing a style-sheet for submit buttons.
+
+Can be used to set the style-sheet, like B<set>(css => $new_css).
+
+See ce.pl for an example.
 
 =head1 current_id()
 
@@ -659,19 +816,19 @@ Usage:
 
 =item *
 
-$tree -> from_directory('/home/rons');
+$tree -> from_dir('/home/rons');
 
 =item *
 
-$tree -> from_directory('D:\My Documents');
+$tree -> from_dir('D:\My Documents');
 
 =item *
 
-$tree -> from_directory('D:/My Documents');
+$tree -> from_dir('D:/My Documents');
 
 =back
 
-You call as_HTML($q) later to retrieve a printable version of the data.
+You call B<as_HTML($q)> later to retrieve a printable version of the data.
 
 See ce.pl for an example.
 
@@ -682,20 +839,19 @@ Returns nothing.
 Tells the object to construct its internal representation of the data by extracting
 information from the given hash.
 
-You would call as_HTML($q) later to retrieve a printable version of the data.
+You would call B<as_HTML($q)> later to retrieve a printable version of the data.
 
-Each key in %$hash_ref is a unique integer, 1 .. N, and points to a hash ref with these
+Each key in %$hash_ref is a unique positive integer, and points to a hash ref with these
 sub keys:
 
 =over 4
 
 =item *
 
-id - A unique integer, 1 .. N, different for each node
+id - A unique positive integer, different for each node
 
-This is the identifier of this node.
-
-Warning: There must be a node with id == 1.
+This is the identifier of this node. It is displayed with the constructor option
+B<new>(show_id => 1), which is the default.
 
 Yes, this is a copy of the key within $hash_ref, for use within
 Tree::Nary-dependent code.
@@ -704,11 +860,12 @@ Tree::Nary-dependent code.
 
 name - A string
 
-This is the (displayed) name of this node.
+This is the name of this node. It is displayed with the constructor option
+B<new>(show_name => 1), which is the default.
 
 =item *
 
-parent_id - An integer, 0 .. N
+parent_id - An integer
 
 This is the identifier of the parent of this node.
 
@@ -725,6 +882,60 @@ still be 0, and your next-level nodes will all have a parent id of 1.
 
 See ce.pl for an example.
 
+=head1 image($icon_id, $new_image)
+
+Returns the file name of the image for the given icon id.
+
+Sets a new image file name for the given icon id.
+
+See ce.pl for an example.
+
+The prefixes are:
+
+=over 4
+
+=item *
+
+'root' - The root icon
+
+=item *
+
+'**' - The current icon
+
+=item *
+
+'-L' - An open node with no siblings below it
+
+=item *
+
+'--' - An open node with siblings below it
+
+=item *
+
+'+L' - A closed node with no siblings below it
+
+=item *
+
+'+-' - A closed node with siblings below it
+
+=item *
+
+' L' - A childless node with no siblings below it
+
+=item *
+
+' -' - A childless node with siblings below it
+
+=item *
+
+'&nbsp;&nbsp;' - A horizonal spacer
+
+=item *
+
+'| ' - A vertical connector
+
+=back
+
 =head1 name()
 
 Returns the name of the 'current' node.
@@ -737,9 +948,9 @@ Returns the id of the parent of the 'current' node.
 
 Returns nothing.
 
-Used to set a new value for any option, after a call to new().
+Used to set a new value for any option, after a call to B<new()>.
 
-set() takes the same parameters as new().
+B<set()> takes the same parameters as B<new()>.
 
 =head1 state($q)
 
@@ -747,6 +958,8 @@ Returns the open/closed state of all nodes.
 
 Tells the object to update its internal representation of the data by recovering
 CGI form field data from the given CGI object.
+
+Warning: This method can only be called after B<from_dir()> or B<from_hash()>.
 
 Warning: You B<must> use the return value as a field, presumably hidden, in a form,
 in your script so that the value can do a round trip out to the browser and back.
@@ -783,16 +996,19 @@ explorer_id_(\d+) - The id of the node clicked on
 
 There is 1 such form field per node.
 
-The click on this node is what submitted the form. (\d+) is a unique integer 1 .. N.
+The click on this node, or the text of this node (when using click_text => 1), is
+what submitted the form. (\d+) is a unique positive integer.
 
-Your CGI script does not need to output these form fields. as_HTML($q) does this
+Your CGI script does not need to output these form fields. B<as_HTML($q)> does this
 for you.
 
 =item *
 
 explorer_state - The open/closed state of all nodes. Its value is a string
 
-Your CGI script must output this value. See above.
+Your CGI script must output this value.
+
+See ce.pl for an example.
 
 =back
 
@@ -805,6 +1021,43 @@ Your CGI script must output this value. See above.
 Tree::Nary. Not shipped with Perl. Get it from a CPAN near you
 
 =back
+
+=head1 Changes
+
+Revision history for Perl extension CGI::Explorer.
+
+	1.10  Sat Mar 11 14:00:00 2001
+	- Change
+		use CGI qw/fieldset legend/;
+		to
+		use CGI;
+		in Explorer.pm. These methods are only used by ce.pl.
+	- Add method image($icon_id, $new_image) to allow setting the image file name
+		of any icon. See POD for a list of icon ids.
+	- Add constructor option css to set the style-sheet for submit buttons.
+		A default style-sheet is provided. Yes, I know the submit button text,
+		using the style-sheet, is really too wide, but as you'll see from the source,
+		I cannot find a style-sheet command to make it narrower.
+	- Add method css() to set or retrieve the style-sheet. As with other new() options,
+		you can also use method set(css => $new_css) to set the style-sheet after
+		construction.
+	- Rename constructor option from 'a_href' to 'click_text', since I now use
+		submit buttons and not a hrefs. The default for click_text is 1,
+		whereas for a_href it was 0.
+		Specifically, new(click_text => 1) has the effect of making the text
+		(node id and/or name) [to the right of the node] into a submit button,
+		formatted nicely via the css option. Clicking this text submits the form
+		and sets the current node. But, if the node has children, it does not change
+		the open/closed status of the node, whereas clicking on the node icon toggles
+		the status.
+	- Remove restriction that there had to be a node id == 1.
+	- Ship explorer_server.gif and explorer_server.png for variety, and for use
+		within ce.pl.
+	- Various minor changes to the docs.
+
+	1.00  Sat Feb 24 12:37:29 2001
+	- original version; created by h2xs 1.20 with options
+		-A -X -f -n CGI::Explorer -v 1.00
 
 =head1 AUTHOR
 
