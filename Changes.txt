@@ -1,5 +1,26 @@
 Revision history for Perl extension CGI::Explorer.
 
+1.12  Sat Mar 24 17:15:00 2001
+	- Add constructor option css_background. It is used to set the background color
+		of submit buttons.
+	- Add constructor option css_color. It is used to set the foreground color of
+		submit buttons.
+	- Add method depth($id), which returns the depth of the node with the given id, or 0.
+	- Add method get($option), which returns the value of the given option, or undef.
+		Eg: $tree -> get('sort_by') returns 'name', by default.
+	- Enhance ce.pl to demonstrate these options.
+
+1.11  Wed Mar 14 21:00:00 2001
+	- Add constructor option sort_by. When set to 'name' (the default), the nodes
+		are sorted by name. When set to 'id', the nodes are sorted by id.
+		Patch ce.pl to demonstrate this, by making it now sort by id.
+	- Add code to ce.pl to set all even ids to open the very first time the script
+		is run. This is simply to demonstrate how to pre-set the open/closed status
+		of nodes.
+	- Reformat part of the pod to avoid a bug in pod2hml. See note under method
+		B<image()>.
+	- Fix spelling of horizontal.
+
 1.10  Sat Mar 11 14:00:00 2001
 	- Change
 		use CGI qw/fieldset legend/;

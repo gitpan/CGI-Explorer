@@ -37,7 +37,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw(
 	
 );
-our $VERSION = '1.10';
+our $VERSION = '1.12';
 
 # ---------------------------------------------------------------------------------
 
@@ -61,35 +61,27 @@ use vars qw($myself);
 <!--
 input.explorer
 {
-background:white;
+background:_css_background;
 border-top-width:0px;
 border-bottom-width:0px;
 border-left-width:0px;
 border-right-width:0px;
-color:navy;
-font:8pt tahoma;
+color:_css_color;
+font-family:tahoma;
+font-size:8pt;
 font-weight:bold;
-/* These are all attempts to shrink the horizontal size of the submit button :-(.
-border-style:solid;
-display:compact;
-left:0%;
-margin-left:0px;
-padding:0%;
-padding-left:0px;
-padding-right:0px;
-text-align:left;
-text-indent:-3ex;
-white-space:pre;
 width:auto;
-*/
 }
 -->
 </style>
 EOS
+		_css_background	=> 'white',
+		_css_color		=> 'navy',
 		_image_dir		=> '/images',
 		_show_current	=> 1,
 		_show_id		=> 1,
 		_show_name		=> 1,
+		_sort_by		=> 'name',
 	);
 
 	my(%_icon_data) =
@@ -254,10 +246,18 @@ sub _build_result
 		${$node[$#node]}{'data'}{'last'} = 0;
 	}
 
-	# Sort these children by 'name'. If there are any, flag the last.
+	# Sort these children by 'name' or 'id'. If there are any, flag the last.
 
-	@node								= sort{$$a{'data'}{'name'} cmp $$b{'data'}{'name'} } @node;
-	${$node[$#node]}{'data'}{'last'}	= 1 if ($#node >= 0);
+	if ($$self{'_sort_by'} =~ /name/i)
+	{
+		@node = sort{$$a{'data'}{'name'} cmp $$b{'data'}{'name'} } @node;
+	}
+	else
+	{
+		@node = sort{$$a{'data'}{'id'} <=> $$b{'data'}{'id'} } @node;
+	}
+	
+	${$node[$#node]}{'data'}{'last'} = 1 if ($#node >= 0);
 
 	# Process each child and its children.
 
@@ -312,6 +312,8 @@ sub css
 {
 	my($self, $new_css)	= @_;
 	$$self{'_css'}		= $new_css if ($new_css);
+	$$self{'_css'}		=~ s/_css_background/$$self{'_css_background'}/;
+	$$self{'_css'}		=~ s/_css_color/$$self{'_css_color'}/;
 
 	$$self{'_css'};
 
@@ -326,6 +328,39 @@ sub current_id
 	$$self{'_current_id'};
 
 }	# End of current_id.
+
+# ---------------------------------------------------------------------------------
+
+sub depth
+{
+	my($self, $id)		= @_;
+	$$self{'_depth'}	= 0;
+
+	Tree::Nary -> traverse($$self{'_root'}, $Tree::Nary::IN_ORDER, $Tree::Nary::TRAVERSE_ALL, -1, \&_depth, $id);
+
+	$$self{'_depth'};
+	
+}	# End of depth.
+
+# ---------------------------------------------------------------------------------
+
+sub _depth
+{
+	my($node, $data) = @_;
+
+	if ($$node{'data'}{'id'} == $data)
+	{
+		# Subtract 1 because of our fake root node.
+
+		$$myself{'_depth'} = Tree::Nary -> depth($node) - 1;
+		return $Tree::Nary::TRUE;
+	}
+	else
+	{
+		return $Tree::Nary::FALSE;
+	}
+	
+}	# End of _depth.
 
 # ---------------------------------------------------------------------------------
 
@@ -377,7 +412,6 @@ sub from_dir
 	$$self{'_id'}			= 0;
 	$$self{'_seen'}			= {};
 	$$self{'_tree'}			= {};
-	$myself					= $self; # Since $self is not available inside _found().
 
 	File::Find::find(\&_found, $dir_name);
 
@@ -465,6 +499,28 @@ sub from_hash
 
 # ---------------------------------------------------------------------------------
 
+sub get
+{
+	my($self, $arg) = @_;
+
+	my($result);
+
+	for my $attr_name ($self -> _standard_keys() )
+	{
+		my($arg_name) = $attr_name =~ /^_(.*)/;
+
+		if (exists($$self{$attr_name}) && ($arg eq $arg_name) )
+		{
+			$result = $$self{$attr_name};
+		}
+	}
+
+	$result;
+
+}	# End of get.
+
+# ---------------------------------------------------------------------------------
+
 sub image
 {
 	my($self, $icon_id, $new_image) = @_;
@@ -491,6 +547,7 @@ sub new
 	my($caller_is_obj)		= ref($caller);
 	my($class)				= $caller_is_obj || $caller;
 	my($self)				= bless({}, $class);
+	$myself					= $self; # Since $self is not available inside _found().
 	$$self{'_current_id'}	= 0;
 	$$self{'_dir_name'}		= '';
 	$$self{'_dir_bit'}		= 0;
@@ -592,7 +649,7 @@ C<CGI::Explorer> - A class to manage a tree of data, for use in CGI scripts
 
 =head1 VERSION
 
-This document refers to version 1.10 of C<CGI::Explorer>, released 11-Mar-2001.
+This document refers to version 1.12 of C<CGI::Explorer>, released 23-Mar-2001.
 
 =head1 SYNOPSIS
 
@@ -689,7 +746,8 @@ This is the class's contructor.
 
 A call to B<new()> is equivalent to:
 
-new(click_text => 0, css => '...', image_dir => '/images', show_current => 1, show_id => 1, show_name => 1)
+new(click_text => 0, css => '...', image_dir => '/images', show_current => 1,
+show_id => 1, show_name => 1, sort_by => 'name')
 
 Options:
 
@@ -710,6 +768,18 @@ Provide a style-sheet for submit buttons, for use when click_text == 1.
 A default style-sheet is provided. Yes, I know the submit button text,
 using the style-sheet, is really too wide, but as you'll see from the source,
 I cannot find a style-sheet command to make it narrower.
+
+=item *
+
+css_background - Default is 'white'
+
+The background color for submit buttons.
+
+=item *
+
+css_color - Default is 'navy'
+
+The foreground color for submit buttons.
 
 =item *
 
@@ -740,6 +810,13 @@ Show the name of the node, to the right of the node's icon, and to the right of 
 node's id (if show_id == 1).
 
 If show_id == 0 && show_name == 0, nothing is displayed.
+
+=item *
+
+sort_by - Default is 'name'
+
+When set to 'name' (any case), sort the nodes by their names. When set to 'id', sort
+them by their ids. Sorting applies to all nodes at the same depth.
 
 =back
 
@@ -795,6 +872,16 @@ See ce.pl for an example.
 =head1 current_id()
 
 Returns the id of the 'current' node.
+
+=head1 depth($id)
+
+Returns the depth of the node whose id is given, or 0.
+
+=head1 _depth()
+
+Used internally.
+
+Called by B<depth()> via Tree::Nary::traverse.
 
 =head1 _found()
 
@@ -882,6 +969,12 @@ still be 0, and your next-level nodes will all have a parent id of 1.
 
 See ce.pl for an example.
 
+=head1 get($option)
+
+Returns the current value of the given option, or undef if the option is unknown.
+
+$tree -> get('css_background') returns 'white', by default.
+
 =head1 image($icon_id, $new_image)
 
 Returns the file name of the image for the given icon id.
@@ -896,45 +989,48 @@ The prefixes are:
 
 =item *
 
-'root' - The root icon
+	'root' - The root icon
 
 =item *
 
-'**' - The current icon
+	'**' - The current icon
 
 =item *
 
-'-L' - An open node with no siblings below it
+	'-L' - An open node with no siblings below it
 
 =item *
 
-'--' - An open node with siblings below it
+	'--' - An open node with siblings below it
 
 =item *
 
-'+L' - A closed node with no siblings below it
+	'+L' - A closed node with no siblings below it
 
 =item *
 
-'+-' - A closed node with siblings below it
+	'+-' - A closed node with siblings below it
 
 =item *
 
-' L' - A childless node with no siblings below it
+	' L' - A childless node with no siblings below it
 
 =item *
 
-' -' - A childless node with siblings below it
+	' -' - A childless node with siblings below it
 
 =item *
 
-'&nbsp;&nbsp;' - A horizonal spacer
+	'&nbsp;&nbsp;' - A horizontal spacer
 
 =item *
 
-'| ' - A vertical connector
+	'| ' - A vertical connector
 
 =back
+
+Note: These are indented because of a bug in pod2html: It complains about '-L' when
+that string is in column 1.
 
 =head1 name()
 
@@ -1024,40 +1120,7 @@ Tree::Nary. Not shipped with Perl. Get it from a CPAN near you
 
 =head1 Changes
 
-Revision history for Perl extension CGI::Explorer.
-
-	1.10  Sat Mar 11 14:00:00 2001
-	- Change
-		use CGI qw/fieldset legend/;
-		to
-		use CGI;
-		in Explorer.pm. These methods are only used by ce.pl.
-	- Add method image($icon_id, $new_image) to allow setting the image file name
-		of any icon. See POD for a list of icon ids.
-	- Add constructor option css to set the style-sheet for submit buttons.
-		A default style-sheet is provided. Yes, I know the submit button text,
-		using the style-sheet, is really too wide, but as you'll see from the source,
-		I cannot find a style-sheet command to make it narrower.
-	- Add method css() to set or retrieve the style-sheet. As with other new() options,
-		you can also use method set(css => $new_css) to set the style-sheet after
-		construction.
-	- Rename constructor option from 'a_href' to 'click_text', since I now use
-		submit buttons and not a hrefs. The default for click_text is 1,
-		whereas for a_href it was 0.
-		Specifically, new(click_text => 1) has the effect of making the text
-		(node id and/or name) [to the right of the node] into a submit button,
-		formatted nicely via the css option. Clicking this text submits the form
-		and sets the current node. But, if the node has children, it does not change
-		the open/closed status of the node, whereas clicking on the node icon toggles
-		the status.
-	- Remove restriction that there had to be a node id == 1.
-	- Ship explorer_server.gif and explorer_server.png for variety, and for use
-		within ce.pl.
-	- Various minor changes to the docs.
-
-	1.00  Sat Feb 24 12:37:29 2001
-	- original version; created by h2xs 1.20 with options
-		-A -X -f -n CGI::Explorer -v 1.00
+See Changes.txt.
 
 =head1 AUTHOR
 

@@ -2,10 +2,6 @@ NAME
 ====
 CGI::Explorer - A class to manage a tree of data, for use in CGI scripts
 
-VERSION
-=======
-This document refers to version 1.00 of CGI::Explorer, released 24-02-2001.
-
 SYNOPSIS
 ========
 See the POD in Explorer.pm, or see ce.pl.
@@ -47,7 +43,8 @@ This is the class's contructor.
 
 A call to new() is equivalent to:
 
-new(a_href => 0, image_dir => '/images', show_current => 1, show_id => 1, show_name => 1)
+new(click_text => 0, css => '...', image_dir => '/images', show_current => 1,
+show_id => 1, show_name => 1, sort_by => 'name')
 
 Icons for Nodes
 ===============
@@ -62,88 +59,6 @@ because the GIFs are uncompressed :-).
 The make file does not install these files automatically. You must install them
 manually under the web server's document root, and then use the image_dir option
 to point to the directory containing these files.
-
-Methods
-=======
-as_HTML($q)
------------
-Returns a string.
-
-Converts the internal representation of the data into HTML, and returns that.
-
-current_id()
-------------
-Returns the id of the 'current' node.
-
-from_dir($dir_name)
--------------------
-Returns nothing.
-
-Tells the object to construct its internal representation of the data by parsing
-the names of all sub-directories in the given directory.
-
-You call as_HTML($q) later to retrieve a printable version of the data.
-
-See ce.pl for an example.
-
-from_hash($hash_ref)
---------------------
-Returns nothing.
-
-Tells the object to construct its internal representation of the data by extracting
-information from the given hash.
-
-You would call as_HTML($q) later to retrieve a printable version of the data.
-
-See ce.pl for an example.
-
-name()
-------
-Returns the name of the 'current' node.
-
-parent_id()
------------
-Returns the id of the parent of the 'current' node.
-
-set()
------
-Returns nothing.
-
-Used to set a new value for any option, after a call to new().
-
-set() takes the same parameters as new().
-
-state($q)
----------
-Returns the open/closed state of all nodes.
-
-Tells the object to update its internal representation of the data by recovering
-CGI form field data from the given CGI object.
-
-Warning: You must use the return value as a field, presumably hidden, in a form,
-in your script so that the value can do a round trip out to the browser and back.
-This way the value can be recovered by the next invocation of your script.
-
-This is the mechanism CGI::Explorer uses to maintain the open/closed state of each
-node. State maintenance is a quite a complex issue. For details, see:
-
-	Writing Apache Modules with Perl and C
-	Lincoln Stein and Doug MacEachern
-	O'Reilly
-	1-56592-567-X
-	Chapter 5 'Maintaining State'
-
-You can see the problem: When you close and then re-open a node, you expect all child
-nodes to be restored to the open/close state they were in before the node was closed.
-
-With a program like Windows Explorer, this is simple, since the program remains in
-RAM, running, all the time nodes are being clicked. Thus it can maintain the state of
-each node in its own (process) memory.
-
-With a CGI script, 2 separate invocations of the script must maintain state outside
-their own memory. I have chosen to use (hidden) form fields in C<CGI::Explorer>.
-
-See ce.pl for an example.
 
 Required Modules
 ================

@@ -1,4 +1,4 @@
-#!D:/perl/bin/perl
+#!/perl/bin/perl
 #
 # Name:
 #	ce.pl.
@@ -78,7 +78,7 @@ my(%hash) =
 # ---------------------------------------------------------------------------------
 
 my($q)		= CGI -> new();
-my($tree)	= CGI::Explorer -> new();
+my($tree)	= CGI::Explorer -> new(css_color => 'maroon', sort_by => 'id');
 my($dir)	= '/home/rons';
 
 $tree -> image('root', 'explorer_server.gif');
@@ -90,6 +90,17 @@ $tree -> image('root', 'explorer_server.gif');
 
 # 2:
 $tree -> from_hash(\%hash);
+
+# The very first time thru, fabricate a 'state' for nodes being open/closed.
+# The function 1 - ($_ % 2) returns 1 for even numbers, so even keys are open.
+# This means oddd keys are closed. Since the root is 9, it is closed.
+# When you open it, you'll see 2 is open, as expected for even keys.
+
+if (! $q -> param('explorer_state') )
+{
+	my($s) = join(';', map{"$_=" . (1 - ($_ % 2) )} keys %hash);
+	$q -> param('explorer_state', $s);
+}
 
 my($state) = $tree -> state($q); # Must follow from_dir() or from_hash().
 
@@ -124,7 +135,8 @@ my($result_set) =
 			{style => 'color: maroon'},
 			'Node clicked'
 		),
-		'Id: ' . $tree -> current_id() . '. Name: ' . $tree -> name()
+		'Id: ' . $tree -> current_id() . '. Name: ' . $tree -> name() . '. Depth: ' .
+		$tree -> depth($tree -> current_id() ) . '. Sort option: ' . $tree -> get('sort_by')
 	);
 
 # 2:
