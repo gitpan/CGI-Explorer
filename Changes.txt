@@ -1,5 +1,9 @@
 Revision history for Perl extension CGI::Explorer.
 
+2.01  Sat Oct 05 11:12:00 2003
+	- Properly document the hash keys _open_icon and _shut_icon.
+		Thanx to Peter <boca@freemail.hu> for drawing this to my attention.
+
 2.00  Tue Dec 10 20:05:00 2002
 	- Note: The API for V 2 has nothing in common with the API for V 1
 	- Rewrite to use xtree by Emil A Eklund http://webfx.eae.net/

@@ -55,7 +55,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw(
 
 );
-our $VERSION = '2.00';
+our $VERSION = '2.01';
 our $myself;
 
 # -----------------------------------------------
@@ -724,12 +724,13 @@ See the discussion of _url 2 items down for details.
 
 =item *
 
-Hash keys matching /^_image$/ may one day be used to override the default icon of a node
+Hash keys matching /^_(open|shut)_icon$/ are special
 
-But this is not implemented, so you can't do this just yet.
+These apply to each node, and hence could be different for every node.
 
-Anyway, we'd need up to 3 columns - for the open icon, the shut icon, and (perhaps) the current icon. And it's all
-getting just a bit too complicated.
+These options allow you to specify an image for when a specific node is in the open and/or closed state.
+
+Note: The _current_icon parameter to new() applies to the tree as a whole.
 
 =item *
 
