@@ -30,6 +30,7 @@ package CGI::Explorer;
 
 use strict;
 use warnings;
+no warnings 'redefine';
 
 use Carp;
 
@@ -55,7 +56,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw(
 
 );
-our $VERSION = '2.01';
+our $VERSION = '2.02';
 our $myself;
 
 # -----------------------------------------------
@@ -82,6 +83,7 @@ our $myself;
 		_left_style		=> 'position: absolute; width: 20em; top: 7em; left: 0.25em; padding: 0.25em; overflow: auto; border: 2px solid #e0e0e0;',
 		_node_id		=> 'rm00000',
 		_right_style	=> 'position: absolute; left: 20.25em; top: 7em; padding: 0.25em; border: 2px solid #e0e0e0;',
+		_target			=> '',
 		_tree			=> '',
 		_url			=> '',
 	);
@@ -130,6 +132,9 @@ our $myself;
 			{
 				$script .= <<EOS;
 var $node_id = new WebFXTreeItem("$key", "$local_url");
+EOS
+			$script .= <<EOS if ($$self{'_target'});
+$node_id.target = '$$self{'_target'}';
 EOS
 			$script .= <<EOS if ($shut_icon);
 $node_id.icon = "$shut_icon";
@@ -613,6 +618,39 @@ This is a string of CSS used to format the HTML div of the right-hand pane, ie t
 in which the CGI script's output is displayed.
 
 The default is 'position: absolute; left: 20.25em; top: 7em; padding: 0.25em; border: 2px solid #e0e0e0;'.
+
+=item *
+
+target
+
+Usage: CGI::Explorer -> new(target => '<name of a frame>').
+
+Recall the operating environment: A CGI script uses this module, and that script has been
+run, so the user is looking at a tree which contains clickable node names. That tree could
+be in one frame, and you want clicks on node names to re-run the CGI script, and to have
+the script's output go to a different frame than the frame containing the tree itself.
+
+This option, then, allows you to have your script output to a named frame, and specifically
+a frame different than the one which received the user's click on the node's name.
+
+Note: After you use this option, clicks on nodes all output to the same frame.
+You cannot use this option to direct clicks on node A to one frame and clicks on node
+B to a different frame. In other words, this option is currently tree-wide, and cannot be
+changed on a node-by-node basis.
+
+If you are using CGI.pm, call header() thus:
+
+	print $q -> header({type => 'text/html', target => 'right'});
+
+Lincoln Stein's book on CGI.pm contains a mis-print on page 222 which says
+frame => 'responses'. Do not use 'frame'.
+
+As you can see, I pass an anonymous hash into every one of CGI.pm's methods. This always
+works, whereas using '-type' etc sometimes fails silently :-(.
+
+If you are using raw HTML, specify target thus:
+
+	<a href = 'http://some.domain.net.au/cgi-bin/x.cgi' target = 'right'>Log in</a>
 
 =item *
 

@@ -1,5 +1,13 @@
 Revision history for Perl extension CGI::Explorer.
 
+2.02  Thu Nov 06 13:24:00 2003
+	- Add an option called 'target' to new(). This allows you to specify the name of a
+		frame which is to receive the output of the CGI script which is using this module.
+		The POD contains a long explanation of this option.
+	- This version will be build by Module::Build and not by my Module::MakeDist.
+		This is an experiment, which, if it works, will mean Module::MakeDist can be
+		discarded.
+
 2.01  Sat Oct 05 11:12:00 2003
 	- Properly document the hash keys _open_icon and _shut_icon.
 		Thanx to Peter <boca@freemail.hu> for drawing this to my attention.

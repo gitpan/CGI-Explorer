@@ -216,6 +216,30 @@ in which the CGI script's output is displayed.</p>
 <p>The default is 'position: absolute; left: 20.25em; top: 7em; padding: 0.25em; border: 2px solid #e0e0e0;'.</p>
 <p></p>
 <li></li>
+target
+<p>Usage: CGI::Explorer -&gt; new(target =&gt; '&lt;name of a frame&gt;').</p>
+<p>Recall the operating environment: A CGI script uses this module, and that script has been
+run, so the user is looking at a tree which contains clickable node names. That tree could
+be in one frame, and you want clicks on node names to re-run the CGI script, and to have
+the script's output go to a different frame than the frame containing the tree itself.</p>
+<p>This option, then, allows you to have your script output to a named frame, and specifically
+a frame different than the one which received the user's click on the node's name.</p>
+<p>Note: After you use this option, clicks on nodes all output to the same frame.
+You cannot use this option to direct clicks on node A to one frame and clicks on node
+B to a different frame. In other words, this option is currently tree-wide, and cannot be
+changed on a node-by-node basis.</p>
+<p>If you are using CGI.pm, call <code>header()</code> thus:</p>
+<pre>
+        print $q -&gt; header({type =&gt; 'text/html', target =&gt; 'right'});</pre>
+<p>Lincoln Stein's book on CGI.pm contains a mis-print on page 222 which says
+frame =&gt; 'responses'. Do not use 'frame'.</p>
+<p>As you can see, I pass an anonymous hash into every one of CGI.pm's methods. This always
+works, whereas using '-type' etc sometimes fails silently :-(.</p>
+<p>If you are using raw HTML, specify target thus:</p>
+<pre>
+        &lt;a href = '<a href="http://some.domain.net.au/cgi-bin/x.cgi">http://some.domain.net.au/cgi-bin/x.cgi</a>' target = 'right'&gt;Log in&lt;/a&gt;</pre>
+<p></p>
+<li></li>
 tree
 <p>Usage: $tree = $explorer -&gt; get('tree').</p>
 <p>This is the tree of JavaScript returned by <code>hash2tree()</code>.</p>
