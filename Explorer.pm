@@ -1,13 +1,33 @@
 package CGI::Explorer;
 
+# Name:
+#	CGI::Explorer.
+#
+# Documentation:
+#	POD-style documentation is at the end. Extract it with pod2html.*.
+#
 # Reference:
 #	Object Oriented Perl
 #	Damian Conway
 #	Manning
 #	1-884777-79-1
 #	P 114
+#
+# Note:
+#	tab = 4 spaces || die.
+#
+# Author:
+#	Ron Savage <ron@savage.net.au>
+#	Home page: http://savage.net.au/index.html
+#
+# Licence:
+#	Australian copyright (c) 1999-2002 Ron Savage.
+#
+#	All Programs of mine are 'OSI Certified Open Source Software';
+#	you can redistribute them and/or modify them under the terms of
+#	The Artistic License, a copy of which is available at:
+#	http://www.opensource.org/licenses/index.html
 
-use integer;
 use strict;
 use warnings;
 
@@ -29,15 +49,15 @@ our @ISA = qw(Exporter);
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
-	
+
 ) ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw(
-	
+
 );
-our $VERSION = '1.12';
+our $VERSION = '1.13';
 
 # ---------------------------------------------------------------------------------
 
@@ -256,7 +276,7 @@ sub _build_result
 	{
 		@node = sort{$$a{'data'}{'id'} <=> $$b{'data'}{'id'} } @node;
 	}
-	
+
 	${$node[$#node]}{'data'}{'last'} = 1 if ($#node >= 0);
 
 	# Process each child and its children.
@@ -339,7 +359,7 @@ sub depth
 	Tree::Nary -> traverse($$self{'_root'}, $Tree::Nary::IN_ORDER, $Tree::Nary::TRAVERSE_ALL, -1, \&_depth, $id);
 
 	$$self{'_depth'};
-	
+
 }	# End of depth.
 
 # ---------------------------------------------------------------------------------
@@ -359,7 +379,7 @@ sub _depth
 	{
 		return $Tree::Nary::FALSE;
 	}
-	
+
 }	# End of _depth.
 
 # ---------------------------------------------------------------------------------
@@ -374,7 +394,7 @@ sub _found
 		$$myself{'_dir_name'}	= $File::Find::dir;
 		$$myself{'_dir_bit'}	= $#bit;
 	}
-	
+
 	splice(@bit, 0, $$myself{'_dir_bit'});
 
 	my($parent);
@@ -478,12 +498,12 @@ sub from_hash
 		for my $key (keys %$hash_ref)
 		{
 			$id = $$hash_ref{$key}{'id'};
-			
+
 			next if ($inserted{$id});
 			next if (! $inserted{$$hash_ref{$key}{'parent_id'} });
-	
+
 			# This hash_ref is absent, but its parent is present. Add it to its parent.
-	
+
 			$seen{$key}						= 0;
 			my($node)						= Tree::Nary -> new($$hash_ref{$key});
 			$inserted{$id}					= $node;
@@ -612,11 +632,11 @@ sub state
 {
 	my($self, $q)		= @_;
 	my($icon_clicked)	= '';
-	
+
 	for ($q -> param() )
 	{
 		($$self{'_current_id'}, $icon_clicked) = ($1, $2) if (/^explorer_id_(\d+)(.*)/);
-	}							
+	}
 
 	if ($q -> param('explorer_state') )
 	{
@@ -627,7 +647,7 @@ sub state
 			$$self{'_state'}{$id}{'open'}	= $open;
 		}
 	}
-	
+
 	# Toggle the 'open' status of the current id.
 
 	$$self{'_state'}{$$self{'_current_id'} }{'open'} = 1 - $$self{'_state'}{$$self{'_current_id'} }{'open'}
@@ -655,9 +675,8 @@ This document refers to version 1.12 of C<CGI::Explorer>, released 23-Mar-2001.
 
 This is tested code, altho the she-bang (#!) line must start in column 1:
 
-	#!D:/Perl/Bin/Perl
+	#!/usr/Bin/Perl
 
-	use integer;
 	use strict;
 	use warnings;
 
@@ -669,7 +688,7 @@ This is tested code, altho the she-bang (#!) line must start in column 1:
 	my($dir)	= 'D:/My Documents/HomePage';
 
 	$tree -> from_dir($dir);
-	
+
 	my($state)	= $tree -> state($q); # Must follow from_dir() or from_hash().
 	my($tree_set)	= $tree -> as_HTML($q);
 	my($result_set)	= 'Id: ' . $tree -> current_id() . '. Name: ' . $tree -> name();
@@ -697,7 +716,7 @@ You need only change 2 lines at most, after cutting and pasting it:
 
 =item *
 
-#!D:/Perl/Bin/Perl
+#!/usr/Bin/Perl
 
 =item *
 
@@ -1130,9 +1149,11 @@ Home page: http://savage.net.au/index.html
 
 =head1 COPYRIGHT
 
-Copyright &copy; 2001, Ron Savage. All rights reserved.
+Austrlian copyright (c) 2001, Ron Savage. All rights reserved.
 
-This program is free software; you can redistribute it and/or modify it under
-the same terms as Perl itself.
+	All Programs of mine are 'OSI Certified Open Source Software';
+	you can redistribute them and/or modify them under the terms of
+	The Artistic License, a copy of which is available at:
+	http://www.opensource.org/licenses/index.html
 
 =cut

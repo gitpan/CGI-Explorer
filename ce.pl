@@ -1,12 +1,23 @@
-#!/perl/bin/perl
+#!/usr/bin/perl
 #
 # Name:
 #	ce.pl.
 #
 # Purpose:
 #	Test program for CGI::Explorer.
+#
+# Author:
+#	Ron Savage <ron@savage.net.au>
+#	http://savage.net.au/index.html
+#
+# Licence:
+#	Australian Copyright (c) 1999-2002 Ron Savage.
+#
+#	All Programs of mine are 'OSI Certified Open Source Software';
+#	you can redistribute them and/or modify them under the terms of
+#	The Artistic License, a copy of which is available at:
+#	http://www.opensource.org/licenses/index.html
 
-use integer;
 use strict;
 use warnings;
 

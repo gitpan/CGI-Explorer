@@ -11,6 +11,11 @@ print "\n";
 
 WriteMakefile
 (
+	($] ge '5.005') ?
+	(
+		'AUTHOR' => 'Ron Savage (ron@savage.net.au)',
+		'ABSTRACT' => 'A CGI support module for tree management and display',
+    ) : (),
 	clean				=>
 	{
 		FILES			=> 'blib/* Makefile MANIFEST CGI-Explorer-*'
@@ -20,8 +25,6 @@ WriteMakefile
 		COMPRESS		=> 'gzip',
 		SUFFIX			=> 'gz'
 	},
-	ABSTRACT			=> 'A CGI support module for tree management and display',
-	AUTHOR				=> 'Ron Savage',
 	DISTNAME			=> 'CGI-Explorer',
 	NAME				=> 'CGI::Explorer',
 	PREREQ_PM			=> {'Tree::Nary' => 1.0},

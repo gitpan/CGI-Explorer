@@ -1,5 +1,9 @@
 Revision history for Perl extension CGI::Explorer.
 
+1.13  Sun May 12 13:12:11 2002
+	- Clean up licence and email stuff in all modules, scripts and other docs.
+		Upgrading is not necessary
+
 1.12  Sat Mar 24 17:15:00 2001
 	- Add constructor option css_background. It is used to set the background color
 		of submit buttons.
