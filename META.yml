@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name: CGI-Explorer
-version: 2.04
+version: 2.05
 author:
   - Ron Savage <ron@savage.net.au>
 abstract: |-

@@ -1,5 +1,9 @@
 Revision history for Perl extension CGI::Explorer.
 
+2.05  Fri Sep  3 09:18:00 2004
+	- Fix bug whereby the root node did not have the 'target' attribute set,
+		so clicking on the root node could produce output in the wrong pane
+
 2.04  Mon Jul 19 10:47:00 2004
 	- Change Makefile.PL to coexist with Module::Build
 	- Rewrite t/test.t to use Test::More

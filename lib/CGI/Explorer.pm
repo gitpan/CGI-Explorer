@@ -56,7 +56,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw(
 
 );
-our $VERSION = '2.04';
+our $VERSION = '2.05';
 our $myself;
 
 # -----------------------------------------------
@@ -154,6 +154,9 @@ if (document.getElementById)
 {
 var $node_id = new WebFXTree("$key", "$local_url");
 $node_id.setBehavior('$$self{'_behavior'}');
+EOS
+	$script .= <<EOS if ($$self{'_target'});
+$node_id.target = '$$self{'_target'}';
 EOS
 	$script .= <<EOS if ($shut_icon);
 $node_id.icon = "$shut_icon";
