@@ -56,7 +56,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw(
 
 );
-our $VERSION = '2.05';
+our $VERSION = '2.06';
 our $myself;
 
 # -----------------------------------------------
@@ -82,7 +82,7 @@ our $myself;
 		_jscript		=> '',
 		_left_style		=> 'position: absolute; width: 20em; top: 7em; left: 0.25em; padding: 0.25em; overflow: auto; border: 2px solid #e0e0e0;',
 		_node_id		=> 'rm00000',
-		_right_style	=> 'position: absolute; left: 20.25em; top: 7em; padding: 0.25em; border: 2px solid #e0e0e0;',
+		_right_style	=> 'position: absolute; left: 21.00em; top: 7em; padding: 0.25em; border: 2px solid #e0e0e0;',
 		_target			=> '',
 		_tree			=> '',
 		_url			=> '',
@@ -294,10 +294,8 @@ sub key2url
 
 sub new
 {
-	my($caller, %arg)		= @_;
-	my($caller_is_obj)		= ref($caller);
-	my($class)				= $caller_is_obj || $caller;
-	my($self)				= bless({}, $class);
+	my($class, %arg)	= @_;
+	my($self)			= bless({}, $class);
 
 	for my $attr_name ($self -> _standard_keys() )
 	{
@@ -306,10 +304,6 @@ sub new
 		if (exists($arg{$arg_name}) )
 		{
 			$$self{$attr_name} = $arg{$arg_name};
-		}
-		elsif ($caller_is_obj)
-		{
-			$$self{$attr_name} = $$caller{$attr_name};
 		}
 		else
 		{
@@ -354,8 +348,6 @@ __END__
 =head1 NAME
 
 C<CGI::Explorer> - A class to manage displaying a hash tree of data, for use in CGI scripts
-
-The format of the hash is discussed in the FAQ section.
 
 =head1 Synopsis
 

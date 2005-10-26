@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name: CGI-Explorer
-version: 2.05
+version: 2.06
 author:
   - Ron Savage <ron@savage.net.au>
 abstract: |-
@@ -11,5 +11,8 @@ requires:
 build_requires:
   Test::More: 0
   Test::Pod: 0
-provides: {}
-generated_by: Module::Build version 0.24
+provides:
+  CGI::Explorer:
+    file: lib/CGI/Explorer.pm
+    version: 2.06
+generated_by: Module::Build version 0.2611

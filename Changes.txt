@@ -1,5 +1,12 @@
 Revision history for Perl extension CGI::Explorer.
 
+2.06  Wed Oct 26 14:27:00 2005
+	- Change examples/bootstrap-hobbit.pl to use the syntax of DBIx::Hash2Table
+		V 2 rather than the syntax of V 1
+	- Change the built-in CSS 'right_style' to use 'left: 21.00em' to make the display neater
+	- Simplify code in new() to no longer check if caller is an object
+		as per the new standard on such matters
+
 2.05  Fri Sep  3 09:18:00 2004
 	- Fix bug whereby the root node did not have the 'target' attribute set,
 		so clicking on the root node could produce output in the wrong pane

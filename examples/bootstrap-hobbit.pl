@@ -83,10 +83,8 @@ sub test
 		hash_ref   => \%hobbit,
 		dbh        => $dbh,
 		table_name => $table_name,
-#		columns    => ['id', 'parent_id', 'name']								# Ignore codes etc.
-#		columns    => ['id', 'parent_id', 'name', 'code']						# Write codes to table.
-#		columns    => ['id', 'parent_id', 'name', '_node_id', 'code']			# Write codes, node ids to table.
-		columns    => ['id', 'parent_id', 'name', '_node_id', '_url', 'code']	# Write everything to table.
+		columns    => ['id', 'parent_id', 'name'],
+		extras     => ['_node_id', '_url', 'code']
 	) -> insert();
 
 	my($data) = $dbh -> selectall_hashref("select * from $table_name", 'id');
