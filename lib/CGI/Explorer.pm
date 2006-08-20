@@ -56,7 +56,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw(
 
 );
-our $VERSION = '2.06';
+our $VERSION = '2.07';
 our $myself;
 
 # -----------------------------------------------
@@ -71,14 +71,14 @@ our $myself;
 	my(%_attr_data) =
 	(
 		_behavior		=> 'classic',
-		_css			=> '/css/xtree.css',
+		_css			=> '/assets/css/explorer/xtree.css',
 		_current_icon	=> '',
 		_current_id		=> '',
 		_current_key	=> '',
 		_form_name		=> 'explorer_form',
 		_hashref		=> {},
 		_header_type	=> 'text/html;charset=ISO-8859-1',
-		_js				=> '/js/xtree.js',
+		_js				=> '/assets/js/explorer/xtree.js',
 		_jscript		=> '',
 		_left_style		=> 'position: absolute; width: 20em; top: 7em; left: 0.25em; padding: 0.25em; overflow: auto; border: 2px solid #e0e0e0;',
 		_node_id		=> 'rm00000',
@@ -351,13 +351,13 @@ C<CGI::Explorer> - A class to manage displaying a hash tree of data, for use in 
 
 =head1 Synopsis
 
-Install /css/xtree.css, /js/xtree.js, and /images/*, as per the installation
-instructions, below.
+Install /assets/css/explorer/xtree.css, /assets/js/explorer/xtree.js, and /assets/images/explorer/*,
+as per the installation instructions, below.
 
 Then run the demos example/bootstrap-hobbit.pl, which creates a database table using C<DBIx::Hash2Table>, and then
 example/hobbit.cgi, which reads a database table using C<DBIx::Table2Hash>.
 
-Or, run example/hobbit-hash.cgi which has the same hash directly in the source code.
+Or, more simply, run example/hobbit-hash.cgi which has the same hash directly in the source code.
 
 =head1 Description
 
@@ -384,12 +384,12 @@ Neither the module CGI.pm, nor any of that kidney, are used by this module.
 
 The makefile will install /perl/site/lib/CGI/Explorer.pm.
 
-You must manually install <Document Root>/css/xtree.css, <Document Root>/js/xtree.js, and
-<Document Root>/images/explorer/*.
+You must manually install <Document Root>/assets/css/explorer/xtree.css,
+<Document Root>/assets/js/explorer/xtree.js, and <Document Root>/assets/images/explorer/*.
 
-If you choose to put the CSS elsewhere, you'll need to call new(css => '/new/path/xtree.css').
+If you choose to put the CSS elsewhere, you'll need to call new(css => '/new/url/of/xtree.css').
 
-If you choose to put the JavaScript elsewhere, you'll need to call new(js => '/new/path/xtree.js').
+If you choose to put the JavaScript elsewhere, you'll need to call new(js => '/new/url/of/xtree.js').
 
 These last 2 options can be used together, and can be passed into C<hash2tree()> or C<set()> rather than
 C<new()>.
@@ -440,7 +440,7 @@ classic means the leaf nodes on the tree have a document icon.
 
 explorer
 
-explorer means the leaf nodes have a folder icon, ie they look like those in MS
+explorer means the leaf nodes have a folder icon, i.e. they look like those in MS
 Windows Explorer, even though they can't be opened.
 
 =back
@@ -452,11 +452,11 @@ JavaScript shipped with C<CGI::Explorer>.
 
 css
 
-Usage: CGI::Explorer -> new(css => '/css/xtree.css').
+Usage: CGI::Explorer -> new(css => '/new/url/to/xtree.css').
 
 This points to a file of CSS used to display the tree.
 
-The default is '/css/xtree.css'.
+The default is '/assets/css/explorer/xtree.css'.
 
 Emil A Eklund is the author of xtree.css.
 
@@ -467,7 +467,7 @@ manually under the web server's document root.
 
 current_icon
 
-Usage: CGI::Explorer -> new(current_icon => '/path/to/image for current icon').
+Usage: CGI::Explorer -> new(current_icon => '/new/url/to/image-for-current-icon.png').
 
 This option takes one of two values:
 
@@ -483,9 +483,9 @@ This stops the currently selected node from being given a special icon.
 
 =item *
 
-'/path/to/image for current icon'
+'/new/url/to/image-for-current-icon.png'
 
-Eg: the file '/images/current.png' is shipped with this module.
+E.g.: the file '/assets/images/explorer/current.png' is shipped with this module.
 
 This gives the currently selected node the icon defined by the value of the string.
 
@@ -533,7 +533,7 @@ Usage: CGI::Explorer -> new(hashref => {...}).
 
 This is a reference to a tree-structured hash which contains the data to be displayed.
 
-From example/hobbit.cgi it will be clear that some CPAN modules' methods, eg my DBIx::Table2Hash -> select_tree(),
+From example/hobbit.cgi it will be clear that some CPAN modules' methods, e.g. my DBIx::Table2Hash -> select_tree(),
 can return a hash suitable for passing directly into C<new()> or C<hash2tree()>.
 
 The default is {}.
@@ -552,20 +552,19 @@ The default is 'text/html;charset=ISO-8859-1'.
 
 js
 
-Usage: CGI::Explorer -> new(js => '/js/xtree.js').
+Usage: CGI::Explorer -> new(js => '/new/url/to/js/xtree.js').
 
 This points to a file of JavaScript used to manipulate the tree.
 
-The default is '/js/xtree.js'.
+The default is '/assets/js/explorer/xtree.js'.
 
 Emil A Eklund is the author of xtree.js.
 
 The make file does not install this JavaScript file automatically. You must install it
 manually under the web server's document root.
 
-Note: I've made one systematic change to xtree.js V 1.15. I've changed lines 62 .. 74
-to add a '/' prefix to the paths of the images. This means you should install the images/
-directory under your web server's document root.
+Note: I've made one systematic change to xtree.js V 1.17. I've changed lines 69 .. 81
+to add an '/assets/images/explorer/' prefix to the paths of the images.
 
 =item *
 
@@ -586,7 +585,7 @@ left_style
 
 Usage: CGI::Explorer -> new(left_style => '<Some CSS>').
 
-This is a string of CSS used to format the HTML div of the left-hand pane, ie the one
+This is a string of CSS used to format the HTML div of the left-hand pane, i.e. the one
 in which the tree is displayed.
 
 The default is 'position: absolute; width: 20em; top: 7em; left: 0.25em; padding: 0.25em; overflow: auto; border: 2px solid #e0e0e0;'.
@@ -609,7 +608,7 @@ right_style
 
 Usage: CGI::Explorer -> new(right_style => '<Some CSS>').
 
-This is a string of CSS used to format the HTML div of the right-hand pane, ie the one
+This is a string of CSS used to format the HTML div of the right-hand pane, i.e. the one
 in which the CGI script's output is displayed.
 
 The default is 'position: absolute; left: 20.25em; top: 7em; padding: 0.25em; border: 2px solid #e0e0e0;'.
@@ -678,7 +677,7 @@ See the FAQ for a discussion of how ids are generated.
 
 It is this final URL, "$url/$id", which is passed back to your CGI script when a node's text is clicked.
 
-It is up to you, as author of the CGI script, to know what to do, ie what code to execute, for a given id.
+It is up to you, as author of the CGI script, to know what to do, i.e. what code to execute, for a given id.
 
 You can think of your CGI script as a callback, being triggered by events in the client. Then, this id is
 what your callback uses to determine what action to take for each client request.
@@ -725,8 +724,8 @@ This uses Perl's default sorting mechanism.
 
 Keys and sub-keys
 
-Keys either point to a string, eg undef, '' or 'Data', or keys point to hashrefs, which is what makes the hash a
-tree. Eg:
+Keys either point to a string, e.g. undef, '' or 'Data', or keys point to hashrefs, which is what makes the hash a
+tree. E.g.:
 
 	my($h)={Root=>{Key_1=>undef,Key_2=>{Key_3=>{...},Data=>''},Key_4=>{}};
 
@@ -777,7 +776,7 @@ then the default URL attached to the node labelled Mega_key is overridden thus:
 
 Mega_key => {_url => 'Special URL', Nested_key_if_any => {} }
 
-See how _url is a sub-key (child) of the key who actually owns this URL.
+See how _url is a sub-key (child) of the key which actually owns this URL.
 
 Clearly, this overriding mechanism operates on a node-by-node basis, so any node can
 be given any node id and/or URL.
@@ -869,7 +868,7 @@ A: Well, by rolling your mouse over the nodes' texts, you can see in the browser
 
 These ids are generated sequentially, starting with 'rm00000'. So, the second id will be 'rm00001', and so on.
 
-The initial value is the default value for the node_id parameter to C<new()> or C<hash2tree()>.
+The initial value is the default value given as the node_id parameter to C<new()> or C<hash2tree()>.
 
 Hence you can control the values of the ids by initializing the node_id parameter, subject to the warnings
 which follow.
@@ -911,7 +910,7 @@ Q: How is the breadcrumb trail in example/hobbit.cgi generated?
 
 A: See the source.
 
-Q: How do I know when to pass a given parameter in to a method? Eg: Do I call C<new()> or C<hash2tree()> to
+Q: How do I know when to pass a given parameter in to a method? E.g.: Do I call C<new()> or C<hash2tree()> to
 set a value for node_id or current_icon?
 
 A: You can pass in any parameter to any method (except C<get()>) at any time before that parameter is actually needed.
@@ -944,8 +943,6 @@ long time to update the screen.
 
 A: Yes.
 
-Emil has kindly offered to work on speeding things up. I have one idea, but have not tried implementing it yet.
-
 =head1 Method: hash2tree(current_id => $current_id, hashref => $hash)
 
 Returns the JavaScript which populates the tree.
@@ -955,9 +952,9 @@ You can also retrieve this JavaScript by calling:
 	$explorer -> hash2tree(hashref => $hashref);
 	my($tree) = $explorer -> get('jscript') . $explorer -> get('tree');
 
-Note: $explorer -> get('js') returns the name of the file of JavaScript written by Emil, ie
-'/js/xtree.js', by default. Try not to get the 2 options 'js' and 'jscript' confused. It'll make you look
-silly :-).
+Note: $explorer -> get('js') returns the name of the file of JavaScript written by Emil, i.e.
+'/assets/js/explorer/xtree.js', by default. Try not to get the 2 options 'js' and 'jscript' confused.
+It'll make you look silly :-).
 
 The 2 parameters listed here are those you would normally pass into C<hash2tree()>, but you are not limited to
 these parameters.
@@ -977,7 +974,7 @@ The [] refer to an optional parameter, not to an array ref.
 
 This method uses the value of current_id to find and return the node corresponding to current_id.
 
-If current_id is '', the get_node returns the value you previously passed in for the hashref option.
+If current_id is '', then get_node returns the value you previously passed in for the hashref option.
 
 =head1 Method: id2key([current_id => $id])
 
@@ -985,7 +982,7 @@ Returns a string.
 
 The [] refer to an optional parameter, not to an array ref.
 
-This method converts a node id, eg retrieved from the path info, into a string which contains,
+This method converts a node id, e.g. retrieved from the path info, into a string which contains,
 in order, all hash keys required to find the node within the tree.
 
 The hash keys are separated by $;, aka $SUBSCRIPT_SEPARATOR.
@@ -1026,7 +1023,7 @@ Returns nothing.
 
 This allows you to set any option after calling the constructor.
 
-Eg: $explorer -> set(css => '/css/even_better.css');
+E.g.: $explorer -> set(css => '/css/even_better.css');
 
 =head1 Icons for Nodes
 
@@ -1074,7 +1071,7 @@ manually under the web server's document root.
 
 None, not even CGI.pm. Well OK, one - Exporter.
 
-In particular, the fine module Tree::Nary, used in V 1 of C<CGI::Explorer>, is
+In particular, that fine module Tree::Nary, used in V 1 of C<CGI::Explorer>, is
 no longer needed.
 
 =head1 Changes

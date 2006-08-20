@@ -9,8 +9,8 @@ ftp://ftp.info-zip.org/pub/infozip/
 
 1 Installing from a Unix-like distro
 ------------------------------------
-shell>gunzip CGI-Explorer-2.06.tgz
-shell>tar mxvf CGI-Explorer-2.06.tar
+shell>gunzip CGI-Explorer-2.07-2.07.tgz
+shell>tar mxvf CGI-Explorer-2.07-2.07.tar
 
 On Unix-like systems, assuming you have installed Module::Build V 0.25+:
 
@@ -42,9 +42,9 @@ On all systems:
 Run Explorer.pm through you favourite pod2html translator.
 
 If you are using my fancy-pom2.pl, with its 'default.css' file installed in
-/apache2/htdocs/css/, you'd do:
+/apache2/htdocs/assets/css/, you'd do:
 
-shell>perl fancy-pom2.pl html -css Explorer.pm > /apache2/htdocs/Explorer.html
+shell>perl fancy-pom2.pl html -css Explorer.pm > /apache2/htdocs/assets/Explorer.html
 
 or perhaps something like:
 
@@ -52,7 +52,7 @@ shell>perl fancy-pom2.pl html -css Explorer.pm > /perl/html/site/lib/CGI/Explore
 
 2 Installing from an ActiveState distro
 ---------------------------------------
-shell>unzip CGI-Explorer-2.06.zip
-shell>ppm install --location=. CGI-Explorer
-shell>del CGI-Explorer-2.06.ppd
-shell>del PPM-CGI-Explorer-2.06.tar.gz
+shell>unzip CGI-Explorer-2.07-2.07.zip
+shell>ppm install --location=. CGI-Explorer-2.07
+shell>del CGI-Explorer-2.07-2.07.ppd
+shell>del PPM-CGI-Explorer-2.07-2.07.tar.gz

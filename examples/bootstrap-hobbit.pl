@@ -7,7 +7,7 @@
 #	Test DBIx::Hash2Table.
 #
 # Note:
-#	Lines 86 .. 89 allow you to control the output.
+#	Lines 85 .. 86 allow you to control the output.
 #
 # Author:
 #	Ron Savage <ron@savage.net.au>
@@ -19,7 +19,6 @@ use warnings;
 use Data::Dumper;
 use DBI;
 use DBIx::Hash2Table;
-use Error qw/ :try /;
 
 # -----------------------------------------------
 
@@ -102,25 +101,16 @@ sub test
 print "$0. \n";
 print "\n";
 
-try
-{
-	my($dbh) = DBI -> connect
-	(
-		'DBI:mysql:test:127.0.0.1', 'root', 'toor',
-		{
-			AutoCommit			=> 1,
-			HandleError			=> sub {Error::Simple -> record($_[0]); 0},
-			PrintError			=> 0,
-			RaiseError			=> 1,
-			ShowErrorStatement	=> 1,
-		}
-	);
+my($dbh) = DBI -> connect
+(
+	'DBI:mysql:test:127.0.0.1', 'root', 'toor',
+	{
+		AutoCommit			=> 1,
+		HandleError			=> sub {Error::Simple -> record($_[0]); 0},
+		PrintError			=> 0,
+		RaiseError			=> 1,
+		ShowErrorStatement	=> 1,
+	}
+);
 
-	test($dbh);
-}
-catch Error::Simple with
-{
-	my($error) = 'Error::Simple: ' . $_[0] -> text();
-	chomp $error;
-	print $error;
-};
+test($dbh);

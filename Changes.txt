@@ -1,5 +1,14 @@
 Revision history for Perl extension CGI::Explorer.
 
+2.07  Fri Aug 18 12:01:00 2006
+	- There are no code changes in this version - there is no need to upgrade
+	- Change the directory structure for css, js and images, to use URLs of the form
+		/assets/css/explorer/*.css
+		/assets/images/explorer/*.png
+		/assets/js/explorer/*.js
+	- Change the defaults and POD in Explorer.pm, xtree.js, and the examples, to match the new directory structure
+	- Make various small corrections and clarifications to the POD
+
 2.06  Wed Oct 26 14:27:00 2005
 	- Change examples/bootstrap-hobbit.pl to use the syntax of DBIx::Hash2Table
 		V 2 rather than the syntax of V 1

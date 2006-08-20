@@ -1,11 +1,12 @@
---- #YAML:1.0
+---
 name: CGI-Explorer
-version: 2.06
+version: 2.07
 author:
-  - Ron Savage <ron@savage.net.au>
-abstract: |-
-  A class to manage displaying a hash tree of data, for use in CGI scripts
+  - 'Ron Savage <ron@savage.net.au>'
+abstract: 'A class to manage displaying a hash tree of data, for use in CGI scripts'
 license: artistic
+resources:
+  license: http://opensource.org/licenses/artistic-license.php
 requires:
   Carp: 0
 build_requires:
@@ -14,5 +15,8 @@ build_requires:
 provides:
   CGI::Explorer:
     file: lib/CGI/Explorer.pm
-    version: 2.06
-generated_by: Module::Build version 0.2611
+    version: 2.07
+generated_by: Module::Build version 0.2801
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.2.html
+  version: 1.2
