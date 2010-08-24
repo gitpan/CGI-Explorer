@@ -16,17 +16,16 @@ assets/images/explorer/T.png
 assets/images/explorer/Tminus.png
 assets/images/explorer/Tplus.png
 assets/js/explorer/xtree.js
-Build.bat
 Build.PL
-Changes.txt
+Changelog.ini
+CHANGES
 examples/bootstrap-hobbit.pl
 examples/hobbit-hash.cgi
 examples/hobbit.cgi
 lib/CGI/Explorer.pm
 Makefile.PL
 MANIFEST			This list of files
-MANIFEST.SKIP
+META.yml
 README
 t/pod.t
 t/test.t
-META.yml

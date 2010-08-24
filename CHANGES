@@ -1,5 +1,16 @@
 Revision history for Perl extension CGI::Explorer.
 
+2.10  Sun Feb 21 12:54:35 2010
+	- Remove text 'All rights reserved' (for Debian licensing).
+	- Remove POD heads 'Required Modules' and 'Changes'.
+
+2.09  Wed Feb 10 14:01:24 2010
+	- MANIFEST.SKIP updated to exclude MYMETA.yml. Add MYMETA.yml.
+
+2.08  Fri Nov 13 13:20:00 2009
+	- Run dos2unix
+	- Rename Changes.txt to CHANGES
+
 2.07  Fri Aug 18 12:01:00 2006
 	- There are no code changes in this version - there is no need to upgrade
 	- Change the directory structure for css, js and images, to use URLs of the form

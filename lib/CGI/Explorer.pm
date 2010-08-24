@@ -56,7 +56,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw(
 
 );
-our $VERSION = '2.07';
+our $VERSION = '2.10';
 our $myself;
 
 # -----------------------------------------------
@@ -1067,17 +1067,6 @@ Original icon file: 'arrow #3.ico'.
 The make file does not install this images/ directory automatically. You must install it
 manually under the web server's document root.
 
-=head1 Required Modules
-
-None, not even CGI.pm. Well OK, one - Exporter.
-
-In particular, that fine module Tree::Nary, used in V 1 of C<CGI::Explorer>, is
-no longer needed.
-
-=head1 Changes
-
-See Changes.txt.
-
 =head1 Credits
 
 C<CGI::Explorer> V 2 depends heavily on the superb package xtree, written by Emil A Eklund,
@@ -1112,8 +1101,7 @@ Home page: http://savage.net.au/index.html
 
 =head1 Copyright
 
-Australian copyright (c) 2001, Ron Savage. All rights reserved.
-
+Australian copyright (c) 2001, Ron Savage.
 	All Programs of mine are 'OSI Certified Open Source Software';
 	you can redistribute them and/or modify them under the terms of
 	The Artistic License, a copy of which is available at:
